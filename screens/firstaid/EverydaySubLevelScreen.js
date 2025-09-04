@@ -1,0 +1,120 @@
+// screens/firstaid/EverydaySubLevelScreen.js
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useRoute, useNavigation, useIsFocused } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import TopBarBack from '../../components/ui/TopBarBack';
+
+const SUBLEVELS = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ'];
+
+// 用于存储 key：把标题（含 emoji）变成稳定的下划线 key
+const normalizeToKey = (raw) => {
+  if (!raw) return null;
+  const noEmoji = raw.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])+/g, '');
+  return noEmoji.trim().toLowerCase().replace(/\s+/g, '_');
+};
+
+export default function EverydaySubLevelScreen() {
+  const route = useRoute();
+  const navigation = useNavigation();
+  const isFocused = useIsFocused();
+
+  const { category, categoryKey: rawKey, categoryTitle } = route.params || {};
+  const title = categoryTitle || category || 'Everyday First Aid';
+  const key = rawKey || normalizeToKey(title);
+
+  const [completedLevels, setCompletedLevels] = useState({});
+
+  useEffect(() => {
+    const loadProgress = async () => {
+      try {
+        if (!key) return;
+        const json = await AsyncStorage.getItem(`everyday_progress_${key}`);
+        setCompletedLevels(json ? JSON.parse(json) : {});
+      } catch (e) {
+        console.error('Failed to load progress:', e);
+      }
+    };
+    if (isFocused) loadProgress();
+  }, [isFocused, key]);
+
+  const handlePress = (subLevel) => {
+    navigation.navigate('EverydayQuiz', {
+      categoryKey: key,
+      categoryTitle: title,
+      subLevel,
+    });
+  };
+
+  if (!key) {
+    return (
+      <View style={styles.fallbackContainer}>
+        <Text style={styles.title}>Everyday First Aid</Text>
+        <Text style={{ textAlign: 'center', color: '#666' }}>
+          Missing category. Please open from a First Aid detail page.
+        </Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+      {/* 统一顶部栏 */}
+      <TopBarBack
+        title={`${title} — Sublevels`}
+        iconName="chevron-back"
+        iconSize={28}
+        iconColor="#0f172a"
+        backgroundColor="#fff"
+        horizontalPadding={16}
+        showBorder={true}
+      />
+
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.kicker}>Everyday First Aid</Text>
+        <Text style={styles.subtitle}>Pick a sublevel to start the quiz</Text>
+
+        {SUBLEVELS.map((sub, idx) => {
+          const isComplete = completedLevels?.[sub] === true;
+          return (
+            <TouchableOpacity key={idx} style={styles.card} onPress={() => handlePress(sub)}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>Sublevel {sub}</Text>
+                <View style={[styles.statusPill, { backgroundColor: isComplete ? '#4caf50' : '#f44336' }]}>
+                  <Text style={styles.statusText}>{isComplete ? 'Complete' : 'Incomplete'}</Text>
+                </View>
+              </View>
+              <Text style={styles.cardText}>
+                {isComplete ? 'You’ve completed this quiz.' : 'Tap to begin this sublevel quiz.'}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+
+        <View style={{ height: 12 }} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  // 当缺少 key 时的回退容器
+  fallbackContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+    justifyContent: 'center',
+  },
+
+  // 主体
+  container: { padding: 16, paddingTop: 20, backgroundColor: '#fff' },
+  kicker: { fontSize: 12, color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' },
+  title: { fontSize: 22, fontWeight: '800', marginBottom: 4, color: '#0b6fb8', textAlign: 'center' },
+  subtitle: { fontSize: 12, color: '#6b7280', marginBottom: 16, textAlign: 'center' },
+  card: { backgroundColor: '#e8f5ff', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#d9ecff' },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
+  statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
+  statusText: { color: '#fff', fontSize: 12, fontWeight: '700' },
+  cardText: { marginTop: 8, fontSize: 13, color: '#374151' },
+});

@@ -1,0 +1,77 @@
+# Learn more: https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# ======================
+# Dependencies
+# ======================
+node_modules/
+
+# ======================
+# Expo / React Native
+# ======================
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+
+# iOS / Android build artifacts
+ios/build/
+android/app/build/
+*.apk
+*.aab
+
+# ======================
+# Native Keys & Certs
+# ======================
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.keystore
+*.mobileprovision
+
+# ======================
+# Metro
+# ======================
+.metro-health-check*
+
+# ======================
+# Debug / Logs
+# ======================
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# ======================
+# macOS / Windows
+# ======================
+.DS_Store
+Thumbs.db
+*.pem
+
+# ======================
+# Environment Files
+# ======================
+.env
+.env*.local
+.env.*        # e.g. .env.production, .env.development
+
+# ======================
+# TypeScript
+# ======================
+*.tsbuildinfo
+
+# ======================
+# IDE / Editor
+# ======================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ======================
+# Supabase
+# ======================
+.supabase/
