@@ -1,9 +1,9 @@
 // screens/ProfileScreen.js
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, Image, Switch,
+  View, Text, StyleSheet, TouchableOpacity, Image,
   Alert, ActivityIndicator, TextInput, KeyboardAvoidingView,
-  Platform, ScrollView,
+  Platform, ScrollView, Animated, Pressable
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -70,6 +70,72 @@ const FEATURED_DEFS = [
   { id: 'ks5',   title: 'Knowledge Seeker', icon: { lib: 'mci', name: 'trophy-outline' } },
   { id: 'ks10',  title: 'Quiz Explorer', icon: { lib: 'ion', name: 'trophy-outline' } },
 ];
+
+/* ----------- 更好看的 ToggleSwitch（黑白风，可调左右贴边） ----------- */
+function ToggleSwitch({ value, onValueChange, disabled }) {
+  const W = 52, H = 30, P = 3, R = 999;
+
+  // 关闭时偏移（负值更靠左，0 为默认）
+  const OFF_OFFSET = -1;
+  // 开启时偏移（正值更靠右）— 想更明显可调到 8/10
+  const ON_OFFSET = -4;
+
+  const anim = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: value ? 1 : 0,
+      duration: 180,
+      useNativeDriver: false,
+    }).start();
+  }, [value, anim]);
+
+  const trackColor = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#e5e7eb', '#111111'] // off -> on
+  });
+
+  const knobX = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [Math.max(0, P + OFF_OFFSET), W - (H - P) + ON_OFFSET] // 左 -> 右（右侧更靠边）
+  });
+
+  return (
+    <Pressable
+      onPress={() => !disabled && onValueChange?.(!value)}
+      style={{ opacity: disabled ? 0.5 : 1 }}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value, disabled }}
+      hitSlop={8}
+    >
+      <Animated.View style={{ width: W, height: H, borderRadius: R, backgroundColor: trackColor, padding: P }}>
+        <Animated.View
+          style={{
+            width: H - P * 2, height: H - P * 2, borderRadius: R,
+            backgroundColor: '#ffffff',
+            transform: [{ translateX: knobX }],
+            shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 2, shadowOffset: { width: 0, height: 1 },
+            elevation: 2,
+          }}
+        />
+      </Animated.View>
+    </Pressable>
+  );
+}
+
+/* 行组件：左侧黑白图标 + 文本 + ToggleSwitch */
+function SettingRow({ iconLib = 'ion', iconName, label, value, onChange, disabled }) {
+  const Icon = iconLib === 'mci' ? MaterialCommunityIcons : Ionicons;
+  return (
+    <View style={styles.settingItem}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Icon name={iconName} size={20} color="#111" />
+        <Text style={styles.settingLabel}>{label}</Text>
+      </View>
+      <ToggleSwitch value={value} onValueChange={onChange} disabled={disabled} />
+    </View>
+  );
+}
 
 export default function ProfileScreen() {
   const navigation = useNavigation();
@@ -433,68 +499,67 @@ export default function ProfileScreen() {
           <View style={[styles.section, { marginTop: 4 }]}>
             <Text style={styles.sectionTitle}>Settings</Text>
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>🔔 Notifications</Text>
-              <Switch
-                value={notificationsEnabled}
-                onValueChange={async (v) => {
-                  if (v) {
-                    try {
-                      const { status } = await Notifications.getPermissionsAsync();
-                      let granted = status === 'granted';
-                      if (!granted) {
-                        const req = await Notifications.requestPermissionsAsync();
-                        granted = req.status === 'granted';
-                      }
-                      if (!granted) {
-                        Alert.alert('Permission required', 'Please allow notifications in system settings to receive alerts.');
-                        setNotificationsEnabled(false);
-                        await saveSetting(STORAGE_KEYS.notifications, false);
-                        return;
-                      }
-                    } catch (e) {
-                      console.warn('notifications permission error:', e);
+            <SettingRow
+              iconLib="ion"
+              iconName="notifications-outline"
+              label="Notifications"
+              value={notificationsEnabled}
+              onChange={async (v) => {
+                if (v) {
+                  try {
+                    const { status } = await Notifications.getPermissionsAsync();
+                    let granted = status === 'granted';
+                    if (!granted) {
+                      const req = await Notifications.requestPermissionsAsync();
+                      granted = req.status === 'granted';
                     }
+                    if (!granted) {
+                      Alert.alert('Permission required', 'Please allow notifications in system settings to receive alerts.');
+                      setNotificationsEnabled(false);
+                      await saveSetting(STORAGE_KEYS.notifications, false);
+                      return;
+                    }
+                  } catch (e) {
+                    console.warn('notifications permission error:', e);
                   }
-                  setNotificationsEnabled(v);
-                  await saveSetting(STORAGE_KEYS.notifications, v);
-                }}
-              />
-            </View>
+                }
+                setNotificationsEnabled(v);
+                await saveSetting(STORAGE_KEYS.notifications, v);
+              }}
+            />
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>🔊 Sound Effects</Text>
-              <Switch
-                value={soundEnabled}
-                onValueChange={async (v) => {
-                  setSoundEnabled(v);
-                  await saveSetting(STORAGE_KEYS.sound, v);
-                  if (!v) {
-                    try { await stopBgm(); } catch (e) { console.warn('stopBgm error:', e); }
-                  }
-                }}
-              />
-            </View>
+            <SettingRow
+              iconLib="ion"
+              iconName="volume-high-outline"
+              label="Sound Effects"
+              value={soundEnabled}
+              onChange={async (v) => {
+                setSoundEnabled(v);
+                await saveSetting(STORAGE_KEYS.sound, v);
+                if (!v) {
+                  try { await stopBgm(); } catch (e) { console.warn('stopBgm error:', e); }
+                }
+              }}
+            />
 
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>📳 Vibration</Text>
-              <Switch
-                value={vibrationEnabled}
-                onValueChange={(v) => { setVibrationEnabled(v); saveSetting(STORAGE_KEYS.vibration, v); }}
-              />
-            </View>
+            <SettingRow
+              iconLib="ion"
+              iconName="vibrate-outline"
+              label="Vibration"
+              value={vibrationEnabled}
+              onChange={async (v) => { setVibrationEnabled(v); await saveSetting(STORAGE_KEYS.vibration, v); }}
+            />
 
-            {/* Mock Disaster */}
-            <View style={styles.settingItem}>
-              <Text style={styles.settingLabel}>🧪 Mock Disaster</Text>
-              <Switch
-                value={mockDisasterActive}
-                onValueChange={(v) => { setMockDisasterActive(v); saveSetting(STORAGE_KEYS.mockDisaster, v); }}
-              />
-            </View>
+            <SettingRow
+              iconLib="mci"
+              iconName="flask-outline"
+              label="Mock Disaster"
+              value={mockDisasterActive}
+              onChange={async (v) => { setMockDisasterActive(v); await saveSetting(STORAGE_KEYS.mockDisaster, v); }}
+            />
 
             <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Text style={styles.logoutText}>🚪 Logout</Text>
+              <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -589,9 +654,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', paddingVertical: 12,
   },
   settingLabel: { fontSize: 16, color: '#333' },
-  settingRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  languageValue: { fontSize: 15, color: '#555' },
-  chevron: { fontSize: 20, color: '#9ca3af' },
 
   logoutButton: { marginTop: 8, backgroundColor: '#f44336', paddingVertical: 12, borderRadius: 10, alignItems: 'center' },
   logoutText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
