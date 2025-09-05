@@ -22,18 +22,80 @@ export default function ResultScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const isFocused = useIsFocused();
 
+  /** 校验 attempt 详情是否有效（有意义的详情才保留） */
+  const isValidDetail = useCallback((detailObj) => {
+    if (!detailObj || typeof detailObj !== 'object') return false;
+    // 必须存在基本字段
+    if (!detailObj.id || !detailObj.kind) return false;
+    // 分数要是数字
+    if (!Number.isFinite(Number(detailObj.score))) return false;
+    // 要求有 answers 且非空（你提到“进去是空数据”，这里直接判空）
+    if (!Array.isArray(detailObj.answers) || detailObj.answers.length === 0) return false;
+    return true;
+  }, []);
+
+  /** 读取索引 -> 批量拉取详情 -> 过滤无详情 -> 自动清理孤儿 */
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+
       const idxRaw = await AsyncStorage.getItem('attemptIndex');
       const idx = idxRaw ? JSON.parse(idxRaw) : [];
-      setAttemptIndex(idx);
+
+      if (!Array.isArray(idx) || idx.length === 0) {
+        setAttemptIndex([]);
+        return;
+      }
+
+      // 批量获取 attempt 详情
+      const keys = idx.map(it => `attempt:${it.id}`);
+      const pairs = await AsyncStorage.multiGet(keys);
+
+      // 建立 id -> detail 的映射
+      const detailMap = new Map();
+      for (const [k, v] of pairs) {
+        if (!k) continue;
+        const id = k.startsWith('attempt:') ? k.slice('attempt:'.length) : k;
+        try {
+          detailMap.set(id, v ? JSON.parse(v) : null);
+        } catch {
+          detailMap.set(id, null);
+        }
+      }
+
+      // 过滤：只保留有详情且有效的项
+      const keep = [];
+      const toRemoveKeys = []; // 需要删除的 attempt 详情键
+      for (const it of idx) {
+        const detail = detailMap.get(it.id) || null;
+        if (isValidDetail(detail)) {
+          keep.push(it);
+        } else {
+          // 详情无效/缺失：删除对应的 attempt:<id>，并从索引剔除
+          toRemoveKeys.push(`attempt:${it.id}`);
+        }
+      }
+
+      // 如有孤儿，做一次“索引与详情”的清理
+      if (toRemoveKeys.length > 0) {
+        // 先删孤儿详情键（不存在也无害）
+        await AsyncStorage.multiRemove(toRemoveKeys);
+        // 回写干净后的索引（可能为空）
+        if (keep.length > 0) {
+          await AsyncStorage.setItem('attemptIndex', JSON.stringify(keep));
+        } else {
+          await AsyncStorage.removeItem('attemptIndex');
+        }
+      }
+
+      setAttemptIndex(keep);
     } catch (err) {
       console.error('❌ Failed to load attempts:', err);
+      setAttemptIndex([]); // 出错也不要卡住
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isValidDetail]);
 
   useEffect(() => { if (isFocused) loadData(); }, [isFocused, loadData]);
 

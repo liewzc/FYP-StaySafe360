@@ -69,7 +69,6 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
-      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
     } catch (err) {
       console.error('Login error:', err);
       setLoginError('An unexpected error occurred. Please try again.');
