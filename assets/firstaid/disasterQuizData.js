@@ -1,4 +1,4 @@
-// quizData.js
+// assets/firstaid/disasterQuizData.js
 export const QUIZ_BANK = {
   Flood: {
     'Ⅰ': [

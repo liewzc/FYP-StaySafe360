@@ -1,35 +1,23 @@
 // screens/firstaid/DisasterPreparednessScreen.js
-import React from 'react';
+import React from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground, Platform
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import TopBarBack from '../../components/ui/TopBarBack'; // Import the separated component
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  ImageBackground,
+  Platform,
+} from "react-native";
+import TopBarBack from "../../components/ui/TopBarBack";
 
-const TITLE = '#111827';
+const RADIUS = 16;
 
-export default function DisasterPreparednessScreen() {
-  const navigation = useNavigation();
-
-  const items = [
-    { key: 'Flood',            title: 'Flood',      img: require('../../assets/disasterpreparedness/flood.jpg') },
-    { key: 'Lightning',        title: 'Lightning',  img: require('../../assets/disasterpreparedness/lightning.jpg') },
-    { key: 'Haze',             title: 'Haze',       img: require('../../assets/disasterpreparedness/haze.jpg') },
-    { key: 'Heatwave',         title: 'Heatwave',   img: require('../../assets/disasterpreparedness/heat.jpg') },
-    { key: 'CoastalFlooding',  title: 'Coastal',    img: require('../../assets/disasterpreparedness/coastal.jpg') },
-  ];
-
-  const openDisaster = (item) => {
-    navigation.navigate('DisasterSubLevel', {
-      disasterType: item.key,
-      title: item.title,
-    });
-  };
-
+export default function DisasterPreparednessScreen({ items, onOpen }) {
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <TopBarBack title="Disaster Preparedness" />
-      
+
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.subtitle}>Choose a hazard to practice</Text>
 
@@ -39,9 +27,13 @@ export default function DisasterPreparednessScreen() {
               key={it.key}
               style={styles.cardWrap}
               activeOpacity={0.9}
-              onPress={() => openDisaster(it)}
+              onPress={() => onOpen(it)}
             >
-              <ImageBackground source={it.img} style={styles.cardImage} imageStyle={styles.cardImageRadius}>
+              <ImageBackground
+                source={it.img}
+                style={styles.cardImage}
+                imageStyle={styles.cardImageRadius}
+              >
                 <View style={styles.cardOverlay} />
                 <Text style={styles.cardTitle} numberOfLines={1}>
                   {it.title}
@@ -55,35 +47,33 @@ export default function DisasterPreparednessScreen() {
   );
 }
 
-const RADIUS = 16;
-
 const styles = StyleSheet.create({
-  container: { 
-    padding: 16, 
-    paddingTop: 16, 
-    backgroundColor: '#fff', 
-    flexGrow: 1 
+  container: {
+    padding: 16,
+    paddingTop: 16,
+    backgroundColor: "#fff",
+    flexGrow: 1,
   },
-  subtitle: { 
-    fontSize: 12, 
-    color: '#6b7280', 
-    textAlign: 'center', 
-    marginTop: 4, 
-    marginBottom: 14 
+  subtitle: {
+    fontSize: 12,
+    color: "#6b7280",
+    textAlign: "center",
+    marginTop: 4,
+    marginBottom: 14,
   },
   grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
-    justifyContent: 'space-between',
+    justifyContent: "space-between",
   },
   cardWrap: {
-    width: '48%',
+    width: "48%",
     borderRadius: RADIUS,
-    overflow: 'hidden',
+    overflow: "hidden",
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.15,
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 4 },
@@ -91,28 +81,22 @@ const styles = StyleSheet.create({
       android: { elevation: 3 },
     }),
   },
-  cardImage: {
-    width: '100%',
-    height: 130,
-    justifyContent: 'flex-end',
-  },
-  cardImageRadius: { 
-    borderRadius: RADIUS 
-  },
+  cardImage: { width: "100%", height: 130, justifyContent: "flex-end" },
+  cardImageRadius: { borderRadius: RADIUS },
   cardOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.2)',
+    backgroundColor: "rgba(0,0,0,0.2)",
     borderRadius: RADIUS,
   },
   cardTitle: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 10,
     left: 12,
     right: 12,
-    color: '#fff',
-    fontWeight: '800',
+    color: "#fff",
+    fontWeight: "800",
     fontSize: 15,
-    textShadowColor: 'rgba(0,0,0,0.65)',
+    textShadowColor: "rgba(0,0,0,0.65)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },

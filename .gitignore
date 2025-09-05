@@ -1,5 +1,3 @@
-# Learn more: https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
 # ======================
 # Dependencies
 # ======================
@@ -16,9 +14,20 @@ expo-env.d.ts
 
 # iOS / Android build artifacts
 ios/build/
+ios/DerivedData/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/Pods/
+
 android/app/build/
+android/.gradle/
+android/.idea/
+android/.cxx/
+android/local.properties
 *.apk
 *.aab
+*.iml
 
 # ======================
 # Native Keys & Certs
@@ -56,7 +65,8 @@ Thumbs.db
 # ======================
 .env
 .env*.local
-.env.*        # e.g. .env.production, .env.development
+.env.*              # e.g. .env.production, .env.development
+!.env.example       # keep a template in git
 
 # ======================
 # TypeScript
@@ -70,8 +80,3 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
-
-# ======================
-# Supabase
-# ======================
-.supabase/

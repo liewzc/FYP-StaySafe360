@@ -1,46 +1,32 @@
-// screens/firstaid/FirstAidScreen.js
+// screens/firstaid/EverydayFirstAidScreen.js
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, ImageBackground, Platform } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import TopBarBack from '../../components/ui/TopBarBack'; // ✅ 导入TopBarBack组件
+import {
+  View, Text, TouchableOpacity, StyleSheet,
+  ScrollView, ImageBackground, Platform
+} from 'react-native';
+import TopBarBack from '../../components/ui/TopBarBack';
 
-const TITLE_COLOR = '#111827';
+const RADIUS = 16;
 
-export default function FirstAidScreen({ navigation }) {
-  const insets = useSafeAreaInsets();
-
-  const items = [
-    { key: 'burns',            title: 'Burns',          img: require('../../assets/everydayfirstaid/burns.jpg') },
-    { key: 'cpr',              title: 'CPR',            img: require('../../assets/everydayfirstaid/cpr.jpg') },
-    { key: 'choking',          title: 'Choking',        img: require('../../assets/everydayfirstaid/choking.jpg') },
-    { key: 'bleeding',         title: 'Bleeding',       img: require('../../assets/everydayfirstaid/bleeding.jpg') },
-    { key: 'fracture',         title: 'Fracture',       img: require('../../assets/everydayfirstaid/fracture.jpg') },
-    { key: 'fainting',         title: 'Fainting',       img: require('../../assets/everydayfirstaid/fainting.jpg') },
-    { key: 'heatstroke',       title: 'Heatstroke',     img: require('../../assets/everydayfirstaid/heat.jpg') },
-    { key: 'electric_shock',   title: 'Electric Shock', img: require('../../assets/everydayfirstaid/electric.jpg') },
-    { key: 'animal_bite',      title: 'Animal Bite',    img: require('../../assets/everydayfirstaid/bite.jpg') },
-    { key: 'smoke_inhalation', title: 'Smoke',          img: require('../../assets/everydayfirstaid/smoke.jpg') },
-  ];
-
-  const handlePress = (item) => {
-    navigation.navigate('EverydaySubLevel', { topic: item.key, category: item.title });
-  };
-
+export default function EverydayFirstAidScreen({
+  items = [],
+  bottomInset = 0,
+  onBack,
+  onOpenTopic,
+}) {
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 使用TopBarBack组件替换原有顶部栏 */}
-      <TopBarBack
-        title="Everyday First Aid"
-        onBack={() => navigation.goBack()}
-      />
+      <TopBarBack title="Everyday First Aid" onBack={onBack} />
 
       <ScrollView
         contentContainerStyle={[
           styles.container,
-          { paddingTop: 12, paddingBottom: insets.bottom + 16 },
+          { paddingTop: 12, paddingBottom: bottomInset + 16 },
         ]}
       >
-        <Text style={styles.subtitle}>Choose a topic to learn quick, life-saving steps</Text>
+        <Text style={styles.subtitle}>
+          Choose a topic to learn quick, life-saving steps
+        </Text>
 
         <View style={styles.grid}>
           {items.map((it) => (
@@ -48,7 +34,7 @@ export default function FirstAidScreen({ navigation }) {
               key={it.key}
               style={styles.cardWrap}
               activeOpacity={0.9}
-              onPress={() => handlePress(it)}
+              onPress={() => onOpenTopic?.(it)}
             >
               <ImageBackground
                 source={it.img}
@@ -67,10 +53,7 @@ export default function FirstAidScreen({ navigation }) {
   );
 }
 
-const RADIUS = 16;
-
 const styles = StyleSheet.create({
-  // 移除原有的headerBar相关样式，因为现在使用TopBarBack组件
   container: { paddingHorizontal: 16, backgroundColor: '#fff', flexGrow: 1 },
   subtitle: { fontSize: 12, color: '#6b7280', textAlign: 'center', marginBottom: 14 },
 

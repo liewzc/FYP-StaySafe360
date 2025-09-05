@@ -7,7 +7,6 @@ import {
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firstAidQuizData as EverydayQuizData } from './EverydayQuizData';
-import { logFirstAidResult } from '../../utils/quizStorage';
 import TopBarBack from '../../components/ui/TopBarBack';
 
 // 🔊 声音工具（受 settings.sound 控制）
@@ -219,19 +218,6 @@ export default function EverydayQuizScreen() {
 
       // 🔊 完成时停止并释放 BGM
       await stopBgm();
-
-      // 统一写入历史（Supabase + 本地兜底）
-      try {
-        await logFirstAidResult({
-          categoryTitle: resolvedTitle,
-          level: lvl,
-          subLevel: sub,
-          score: finalScore20, // First Aid 存展示分（*20）
-          timeSpentMs,
-        });
-      } catch (e) {
-        console.warn('Failed to log first-aid result:', e);
-      }
 
       navigation.replace('FirstAidResult', {
         score: finalScore20,

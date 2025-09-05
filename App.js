@@ -25,10 +25,10 @@ import QuizScreen from './screens/quiz/QuizScreen';
 import AttemptDetailScreen from './screens/quiz/AttemptDetailScreen';
 import ResultShareScreen from './screens/quiz/ResultShareScreen';
 
-import DisasterPreparednessScreen from './screens/firstaid/DisasterPreparednessScreen';
-import DisasterSubLevelScreen from './screens/firstaid/DisasterSubLevelScreen';
-import DisasterQuizScreen from './screens/firstaid/DisasterQuizScreen';
-import EverydayFirstAidScreen from './screens/firstaid/EverydayFirstAidScreen';
+import DisasterPreparedness from './logic/DisasterPreparednessContainer';
+import DisasterSubLevelContainer from './logic/DisasterSubLevelContainer';
+import DisasterQuiz from './logic/DisasterQuizContainer';
+import EverydayFirstAidContainer from './logic/EverydayFirstAidContainer';
 import EverydaySubLevelScreen from './screens/firstaid/EverydaySubLevelScreen';
 import EverydayQuizScreen from './screens/firstaid/EverydayQuizScreen';
 import FirstAidResultScreen from './screens/firstaid/FirstAidResultScreen';
@@ -43,7 +43,7 @@ import ResourceHubScreen from './screens/knowledge/quickaccess/ResourceHubScreen
 import BookmarksScreen from './screens/knowledge/quickaccess/BookmarksScreen';
 import CPRTrainingScreen from './screens/knowledge/quickaccess/CPRTrainingScreen';
 
-import AchievementGalleryScreen from './screens/achievements/AchievementGalleryScreen';
+import AchievementGallery from './logic/AchievementGalleryContainer';
 import ChecklistScreen from './screens/ChecklistScreen';
 import WeatherMapScreen from './screens/WeatherMapScreen';
 import SOSScreen from './screens/SOSScreen';
@@ -51,7 +51,7 @@ import ChatbotScreen from './screens/ChatbotScreen';
 
 import LoginScreen from './auth/LoginScreen';
 import RegisterScreen from './auth/RegisterScreen';
-import ForgotPassword from './auth/ForgotPassword';
+import ForgotPassword from './auth/ForgotPasswordScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -158,9 +158,9 @@ function AppStackWithInsets() {
       <Stack.Screen name="DisasterSelect" component={QuizScreen} />
 
       {/* Disaster Preparedness */}
-      <Stack.Screen name="DisasterPreparedness" component={DisasterPreparednessScreen} />
-      <Stack.Screen name="DisasterSubLevel" component={DisasterSubLevelScreen} />
-      <Stack.Screen name="DisasterQuiz" component={DisasterQuizScreen} />
+      <Stack.Screen name="DisasterPreparedness" component={DisasterPreparedness} />
+      <Stack.Screen name="DisasterSubLevel" component={DisasterSubLevelContainer} />
+      <Stack.Screen name="DisasterQuiz" component={DisasterQuiz} />
 
       {/* quiz 流程 */}
       <Stack.Screen name="SubLevel" component={SubLevelScreen} />
@@ -169,12 +169,12 @@ function AppStackWithInsets() {
       <Stack.Screen name="FirstAidResult" component={FirstAidResultScreen} />
 
       {/* Everyday First Aid flows */}
-      <Stack.Screen name="EverydayFirstAid" component={EverydayFirstAidScreen} />
+      <Stack.Screen name="EverydayFirstAid" component={EverydayFirstAidContainer} />
       <Stack.Screen name="EverydaySubLevel" component={EverydaySubLevelScreen} />
       <Stack.Screen name="EverydayQuiz" component={EverydayQuizScreen} />
 
       {/* Utilities */}
-      <Stack.Screen name="AchievementGallery" component={AchievementGalleryScreen} />
+      <Stack.Screen name="AchievementGallery" component={AchievementGallery} />
       <Stack.Screen name="Checklist" component={ChecklistScreen} />
       <Stack.Screen name="AttemptDetail" component={AttemptDetailScreen} />
 
