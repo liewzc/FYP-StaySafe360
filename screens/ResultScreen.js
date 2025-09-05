@@ -5,7 +5,7 @@ import {
   ActivityIndicator, RefreshControl, Alert, Platform
 } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // ✅ 安全区
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const PRIMARY = '#0b6fb8';
@@ -15,7 +15,7 @@ const CARD_BORDER = '#e6f1fb';
 
 export default function ResultScreen() {
   const navigation = useNavigation();
-  const insets = useSafeAreaInsets(); // ✅
+  const insets = useSafeAreaInsets();
   const [attemptIndex, setAttemptIndex] = useState([]); // 本机作答索引（含 disaster / firstaid）
   const [tab, setTab] = useState('disaster');
   const [loading, setLoading] = useState(true);
@@ -25,11 +25,8 @@ export default function ResultScreen() {
   /** 校验 attempt 详情是否有效（有意义的详情才保留） */
   const isValidDetail = useCallback((detailObj) => {
     if (!detailObj || typeof detailObj !== 'object') return false;
-    // 必须存在基本字段
     if (!detailObj.id || !detailObj.kind) return false;
-    // 分数要是数字
     if (!Number.isFinite(Number(detailObj.score))) return false;
-    // 要求有 answers 且非空（你提到“进去是空数据”，这里直接判空）
     if (!Array.isArray(detailObj.answers) || detailObj.answers.length === 0) return false;
     return true;
   }, []);
@@ -65,22 +62,19 @@ export default function ResultScreen() {
 
       // 过滤：只保留有详情且有效的项
       const keep = [];
-      const toRemoveKeys = []; // 需要删除的 attempt 详情键
+      const toRemoveKeys = [];
       for (const it of idx) {
         const detail = detailMap.get(it.id) || null;
         if (isValidDetail(detail)) {
           keep.push(it);
         } else {
-          // 详情无效/缺失：删除对应的 attempt:<id>，并从索引剔除
           toRemoveKeys.push(`attempt:${it.id}`);
         }
       }
 
-      // 如有孤儿，做一次“索引与详情”的清理
+      // 有孤儿则清理
       if (toRemoveKeys.length > 0) {
-        // 先删孤儿详情键（不存在也无害）
         await AsyncStorage.multiRemove(toRemoveKeys);
-        // 回写干净后的索引（可能为空）
         if (keep.length > 0) {
           await AsyncStorage.setItem('attemptIndex', JSON.stringify(keep));
         } else {
@@ -91,7 +85,7 @@ export default function ResultScreen() {
       setAttemptIndex(keep);
     } catch (err) {
       console.error('❌ Failed to load attempts:', err);
-      setAttemptIndex([]); // 出错也不要卡住
+      setAttemptIndex([]);
     } finally {
       setLoading(false);
     }
@@ -214,7 +208,7 @@ export default function ResultScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 只保留：This device attempts (with details) */}
+        {/* 仅保留：This device attempts (with details) */}
         <Text style={styles.sectionTitle}>This device attempts (with details)</Text>
 
         {tab === 'disaster' ? (
@@ -228,7 +222,7 @@ export default function ResultScreen() {
                 sublevel={a.subLevel ?? '—'}
                 score={a.score}
                 total={a.total}
-                time={new Date(a.created_at).toLocaleString()}
+                time={formatDateTime(a.created_at)}
                 emoji={pickEmoji({ disaster: a.disasterType }, false)}
                 accent="#0ea5e9"
                 onPressDetails={() => navigation.navigate('AttemptDetail', { attemptId: a.id })}
@@ -246,7 +240,7 @@ export default function ResultScreen() {
                 sublevel={a.subLevel ?? '—'}
                 score={a.score}
                 total={a.total}
-                time={new Date(a.created_at).toLocaleString()}
+                time={formatDateTime(a.created_at)}
                 emoji={pickEmoji({ disaster: a.disasterType }, true)}
                 accent="#22c55e"
                 onPressDetails={() => navigation.navigate('AttemptDetail', { attemptId: a.id })}
@@ -278,7 +272,9 @@ export default function ResultScreen() {
 function Card({ title, sublevel, score, total, time, emoji, accent = PRIMARY, onPressDetails }) {
   const scoreNum = typeof score === 'number' ? score : Number(score);
   const totalNum = typeof total === 'number' ? total : NaN;
-  const textDisplay = Number.isFinite(scoreNum) ? (Number.isFinite(totalNum) ? `${scoreNum}/${totalNum}` : String(scoreNum)) : '—';
+  const textDisplay = Number.isFinite(scoreNum)
+    ? (Number.isFinite(totalNum) ? `${scoreNum}/${totalNum}` : String(scoreNum))
+    : '—';
   const scoreBadgeStyle = getScoreBadgeStyle(
     Number.isFinite(scoreNum) && Number.isFinite(totalNum) ? Math.round((scoreNum / totalNum) * 10) : scoreNum
   );
@@ -306,8 +302,6 @@ function Card({ title, sublevel, score, total, time, emoji, accent = PRIMARY, on
           <Text style={styles.btnViewText}>🔎 View details</Text>
         </TouchableOpacity>
       )}
-
-      <View style={[styles.cardAccent, { backgroundColor: accent }]} />
     </View>
   );
 }
@@ -355,9 +349,21 @@ function pickEmoji(item, isFirstAid) {
   return '🌐';
 }
 
+/** 时间格式化：24小时制 YYYY-MM-DD HH:mm:ss */
+function formatDateTime(ts) {
+  const d = new Date(ts);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const h = String(d.getHours()).padStart(2, '0'); // 24h
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  return `${y}-${m}-${day} ${h}:${min}:${s}`;
+}
+
 /** —— 样式 —— */
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#fff' }, // ✅ 外层容器，结合安全区 padding
+  page: { flex: 1, backgroundColor: '#fff' }, // 外层容器，结合安全区 padding
   container: { paddingHorizontal: 16, backgroundColor: '#f6f8fb', flexGrow: 1 },
   title: { fontSize: 24, fontWeight: '800', textAlign: 'center', marginTop: 6, marginBottom: 14, color: '#0f172a' },
   sectionTitle: { fontSize: 14, color: '#475569', fontWeight: '800', marginBottom: 8, marginTop: 2, textTransform: 'uppercase' },
@@ -397,8 +403,6 @@ const styles = StyleSheet.create({
 
   btnView: { marginTop: 10, alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1.5, borderColor: PRIMARY, backgroundColor: '#fff' },
   btnViewText: { color: PRIMARY, fontWeight: '800' },
-
-  cardAccent: { height: 4, borderRadius: 999, marginTop: 10, opacity: 0.85 },
 
   emptyBox: { backgroundColor: '#f3f4f6', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 18, alignItems: 'center', marginTop: 8 },
   emptyText: { color: MUTED, fontSize: 14 },
