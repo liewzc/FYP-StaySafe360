@@ -51,13 +51,13 @@ export const ACHIEVEMENTS = (() => {
     { id:'streak14',days:14, title:'Two-Week Hero',    icon:{ lib:'ion', name:'sunny-outline' } },
     { id:'streak30',days:30, title:'30-Day Survivor',  icon:{ lib:'mci', name:'crown-outline' } },
   ].forEach(({ id, days, title, icon }) =>
-    list.push(A(id, title, `连续打卡 ${days} 天`, 'Daily Streaks', icon)));
+    list.push(A(id, title, `Check in for ${days} consecutive days`, 'Daily Streaks', icon)));
   // Knowledge
   list.push(
-    A('kn1','Quick Learner','阅读 1 篇知识文章','Knowledge',{ lib:'ion', name:'book-outline' }),
-    A('kn5','Reader','阅读 5 篇知识文章','Knowledge',{ lib:'ion', name:'book' }),
-    A('kn10','Knowledge Collector','阅读 10 篇知识文章','Knowledge',{ lib:'ion', name:'library-outline' }),
-    A('kn15','Knowledge Finisher',`阅读全部 ${KNOWLEDGE_TOTAL_ARTICLES} 篇文章`,'Knowledge',{ lib:'mci', name:'lightbulb-outline' }),
+    A('kn1','Quick Learner','Read 1 knowledge article','Knowledge',{ lib:'ion', name:'book-outline' }),
+    A('kn5','Reader','Read 5 knowledge articles','Knowledge',{ lib:'ion', name:'book' }),
+    A('kn10','Knowledge Collector','Read 10 knowledge articles','Knowledge',{ lib:'ion', name:'library-outline' }),
+    A('kn15','Knowledge Finisher',`Read all ${KNOWLEDGE_TOTAL_ARTICLES} articles`,'Knowledge',{ lib:'mci', name:'lightbulb-outline' }),
   );
   return list;
 })();
