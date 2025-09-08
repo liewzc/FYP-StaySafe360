@@ -86,7 +86,7 @@ async function insertHistoryRow({ kind, disaster, level, sublevel, score, time_s
     });
 
     if (error) throw error;
-    // Server 写入成功：也写一份兜底（可选，不写也行，这里选择不写）
+    // Server 写入成功
     return { ok: true, fallback: false };
   } catch (e) {
     // 服务端失败：本地兜底
@@ -116,7 +116,7 @@ export async function logDisasterResult({ disasterType, level, subLevel, score, 
   });
 }
 
-/** ----------------- 公开 API：记录急救测验 ----------------- */
+/** ----------------- 公开 API：记录急救测验（First Aid） ----------------- */
 /**
  * @param {Object} p
  * @param {string} p.categoryTitle
@@ -128,7 +128,8 @@ export async function logDisasterResult({ disasterType, level, subLevel, score, 
 export async function logFirstAidResult({ categoryTitle, level, subLevel, score, timeSpentMs }) {
   const time_sec = Math.round((timeSpentMs || 0) / 1000);
   return insertHistoryRow({
-    kind: 'everydayfirstaid',
+    // ✅ Canonical kind name for First Aid
+    kind: 'firstaid',
     disaster: categoryTitle,
     level: level ?? null,
     sublevel: subLevel,
@@ -139,11 +140,16 @@ export async function logFirstAidResult({ categoryTitle, level, subLevel, score,
 
 /** ----------------- 公开 API：读取历史（合并服务端 + 本地） ----------------- */
 /**
- * @param {'disaster'|'everydayfirstaid'} kind
+ * @param {'disaster'|'firstaid'|'everydayfirstaid'} kind
  * @param {number} limit
  */
 export async function getHistory(kind, limit = 50) {
   const lim = Math.min(limit, MAX_HISTORY);
+
+  // ✅ Read both kinds for First Aid to keep legacy data visible
+  const kinds = (kind === 'firstaid' || kind === 'everydayfirstaid')
+    ? ['firstaid', 'everydayfirstaid']
+    : [kind];
 
   let serverRows = [];
   // 先尝试拉取服务端
@@ -157,7 +163,7 @@ export async function getHistory(kind, limit = 50) {
       .from('quiz_history')
       .select('*')
       .eq('user_id', user.id)
-      .eq('kind', kind)
+      .in('kind', kinds) // ← read both firstaid & everydayfirstaid
       .order('created_at', { ascending: false })
       .limit(lim);
 
@@ -166,17 +172,16 @@ export async function getHistory(kind, limit = 50) {
     serverRows = (data || []).map((r) =>
       normalizeRow({
         ...r,
-        // 服务端一般 score 就是 number；保持兼容
         score: r.score,
       })
     );
   } catch (_) {
-    // 忽略服务端错误，走本地兜底
     serverRows = [];
   }
 
-  // 读取本地兜底
-  const localRows = (await readFallback(kind)).map(normalizeRow);
+  // 读取本地兜底（两种 kind 都读）
+  const localBuckets = await Promise.all(kinds.map((k) => readFallback(k)));
+  const localRows = localBuckets.flat().map(normalizeRow);
 
   // 合并去重（按 created_at & disaster & sublevel & score 粗略去重）
   const keyOf = (x) => `${x.created_at}|${x.disaster}|${x.sublevel}|${x.score}`;
@@ -195,8 +200,13 @@ export async function getHistory(kind, limit = 50) {
 
 /** ----------------- 公开 API：清空某类历史（服务端 + 本地） ----------------- */
 export async function clearHistory(kind) {
-  // 清空本地兜底
-  await clearFallback(kind);
+  // ✅ 清空本地兜底（两种 kind 都清）
+  const kinds = (kind === 'firstaid' || kind === 'everydayfirstaid')
+    ? ['firstaid', 'everydayfirstaid']
+    : [kind];
+  for (const k of kinds) {
+    await clearFallback(k);
+  }
 
   // 再尝试清服务端
   try {
@@ -209,7 +219,7 @@ export async function clearHistory(kind) {
       .from('quiz_history')
       .delete()
       .eq('user_id', user.id)
-      .eq('kind', kind);
+      .in('kind', kinds); // ← delete both
 
     if (error) throw error;
   } catch {

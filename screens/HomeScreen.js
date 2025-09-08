@@ -1,23 +1,14 @@
 // screens/HomeScreen.js
-import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, RefreshControl,
   ActivityIndicator, ScrollView, Linking, Image, FlatList, Dimensions,
   Modal, Pressable,
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
-import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Notifications from 'expo-notifications'; // ✅ 通知
 
-// ✅ 迷你地图
 import LeafletMiniMap from '../components/LeafletMiniMap';
-
-// ✅ 统一从独立 API 文件获取数据
-import { getAll } from '../utils/dataGov';
 
 // ===== Theme =====
 const PRIMARY = '#0b6fb8';
@@ -56,7 +47,7 @@ import LocalIcon from '../assets/firstaidhub/localdisaster.png';
 import PrepIcon from '../assets/firstaidhub/disaster.png';
 import EverydayIcon from '../assets/firstaidhub/everyday.png';
 
-/** —— 简单天气图标选择 —— */
+/** —— Simple weather icon pick —— */
 const pickIconByConditions = ({ temp, rain1h, wind }) => {
   const t = Number(temp);
   const r = Number(rain1h);
@@ -68,7 +59,7 @@ const pickIconByConditions = ({ temp, rain1h, wind }) => {
   return CloudyIcon;
 };
 
-/** —— PM2.5 动态样式（绿/黄/橙/红） —— */
+/** —— Styles for metric chips —— */
 function getPm25Style(pm) {
   const n = typeof pm === 'number' ? pm : Number(pm);
   if (Number.isNaN(n)) {
@@ -79,8 +70,6 @@ function getPm25Style(pm) {
   if (n <= 55)   return { bg: '#fff7ed', border: '#fdba74', text: '#9a3412', label: 'USG',       score: 2 };
   return           { bg: '#fef2f2', border: '#fecaca', text: '#7f1d1d', label: 'Unhealthy', score: 3 };
 }
-
-/** —— 风速样式（m/s） —— */
 function getWindStyle(ms) {
   const n = typeof ms === 'number' ? ms : Number(ms);
   if (Number.isNaN(n)) return { bg: '#f7fbff', border: '#e6f1fb', text: PRIMARY, score: 0 };
@@ -88,8 +77,6 @@ function getWindStyle(ms) {
   if (n >= 5) return { bg: '#fff7ed', border: '#fdba74', text: '#9a3412', score: 1 };
   return { bg: '#ecfeff', border: '#a5f3fc', text: '#155e75', score: 0 };
 }
-
-/** —— 雨量样式（1h 累计，mm） —— */
 function getRainStyle(mm) {
   const n = typeof mm === 'number' ? mm : Number(mm);
   if (Number.isNaN(n)) return { bg: '#f7fbff', border: '#e6f1fb', text: PRIMARY, score: 0 };
@@ -97,8 +84,6 @@ function getRainStyle(mm) {
   if (n >= 2) return { bg: '#f0f9ff', border: '#e0f2fe', text: '#0369a1', score: 1 };
   return { bg: '#f7fbff', border: '#e6f1fb', text: PRIMARY, score: 0 };
 }
-
-/** —— 湿度样式（%） —— */
 function getHumidityStyle(h) {
   const n = typeof h === 'number' ? h : Number(h);
   if (Number.isNaN(n)) return { bg: '#f7fbff', border: '#e6f1fb', text: PRIMARY, score: 0 };
@@ -106,7 +91,7 @@ function getHumidityStyle(h) {
   return { bg: '#f7fbff', border: '#e6f1fb', text: PRIMARY, score: 0 };
 }
 
-/* ====================== 全屏图集（零依赖） ====================== */
+/* ====================== Fullscreen gallery (no deps) ====================== */
 function GalleryModal({ visible, images, initialIndex = 0, onClose }) {
   const { width, height } = Dimensions.get('window');
   const listRef = useRef(null);
@@ -150,7 +135,7 @@ function GalleryModal({ visible, images, initialIndex = 0, onClose }) {
   );
 }
 
-/** —— 可滑动广告 Carousel —— */
+/** —— Ad Carousel —— */
 function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, borderRadius = 16 }) {
   const { width } = Dimensions.get('window');
   const [index, setIndex] = useState(0);
@@ -189,19 +174,23 @@ function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, bor
         keyExtractor={(_, i) => String(i)}
         horizontal
         pagingEnabled
+        // each item takes the full screen width, so paging centers the image
+        snapToInterval={width}
+        decelerationRate="fast"
         showsHorizontalScrollIndicator={false}
         renderItem={({ item, index: i }) => (
           <TouchableOpacity
             activeOpacity={0.95}
             onPress={() => onPressImage?.(i)}
+            // full-width item; center the image inside
+            style={{ width, alignItems: 'center' }}
           >
             <Image
               source={item}
               style={{
-                width: width - 32,
+                width: width - 32,   // smaller than screen so you see margins
                 height,
                 borderRadius,
-                marginRight: 8,
                 resizeMode: 'cover',
               }}
             />
@@ -212,9 +201,10 @@ function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, bor
           clearInterval(timerRef.current);
           timerRef.current = setInterval(() => {
             setIndex((cur) => {
-              const next = (cur + 1) % images.length;
-              listRef.current?.scrollToIndex({ index: next, animated: true });
-              return next;
+              const next = (cur + 1) ^ 0; // noop to satisfy linter
+              const tgt = (cur + 1) % images.length;
+              listRef.current?.scrollToIndex({ index: tgt, animated: true });
+              return tgt;
             });
           }, autoMs);
         }}
@@ -222,7 +212,7 @@ function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, bor
         viewabilityConfig={viewConfigRef.current}
       />
 
-      {/* 圆点指示器 */}
+      {/* dots */}
       <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 8, gap: 6 }}>
         {images.map((_, i) => (
           <View
@@ -240,7 +230,7 @@ function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, bor
   );
 }
 
-/** —— Quiz 横向滑动（Carousel） —— */
+/** —— Quiz Carousel —— */
 function QuizCarousel({ items, onPressItem, height = 86 }) {
   const { width } = Dimensions.get('window');
   const ITEM_W = width * 0.82;
@@ -260,10 +250,7 @@ function QuizCarousel({ items, onPressItem, height = 86 }) {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => onPressItem?.(item)}
-            style={[
-              styles.quizCardH,
-              { width: ITEM_W, marginRight: SPACING, height },
-            ]}
+            style={[styles.quizCardH, { width: ITEM_W, marginRight: SPACING, height }]}
           >
             <Image source={item.icon} style={styles.quizIcon} />
             <View style={{ flex: 1 }}>
@@ -277,7 +264,7 @@ function QuizCarousel({ items, onPressItem, height = 86 }) {
   );
 }
 
-/** —— Knowledge 横向滑动（Emoji 卡片） —— */
+/** —— Knowledge Carousel —— */
 function KnowledgeCarousel({ items, onPressItem, height = 86 }) {
   const { width } = Dimensions.get('window');
   const ITEM_W = width * 0.86;
@@ -297,10 +284,7 @@ function KnowledgeCarousel({ items, onPressItem, height = 86 }) {
           <TouchableOpacity
             activeOpacity={0.9}
             onPress={() => onPressItem?.(item)}
-            style={[
-              styles.knowledgeCardH,
-              { width: ITEM_W, marginRight: SPACING, height },
-            ]}
+            style={[styles.knowledgeCardH, { width: ITEM_W, marginRight: SPACING, height }]}
           >
             <Text style={styles.kEmoji}>{item.emoji}</Text>
             <View style={{ flex: 1 }}>
@@ -315,10 +299,9 @@ function KnowledgeCarousel({ items, onPressItem, height = 86 }) {
   );
 }
 
-/* —— Alert Card 组件 —— */
+/* —— Alert Card —— */
 function AlertCard({ kind = 'safe', title, lines = [] }) {
   const isDanger = kind === 'danger';
-
   const COLORS = isDanger
     ? { bg: '#fef2f2', border: '#fecaca', text: '#991b1b', icon: '#ef4444' }
     : { bg: '#ecfdf5', border: '#bbf7d0', text: '#065f46', icon: '#10b981' };
@@ -353,178 +336,47 @@ function AlertCard({ kind = 'safe', title, lines = [] }) {
   );
 }
 
-/* ===== 通知节流用的本地键 & 辅助函数 ===== */
-const ALERT_KEYS = {
-  lastLevel: 'alerts.lastLevel',   // 'safe' | 'danger'
-  lastPushAt: 'alerts.lastPushAt', // ISO 时间
-};
+/** ===== Presentation-only Screen ===== */
+export default function HomeScreen({
+  // data
+  loading,
+  refreshing,
+  onRefresh,
+  location,
+  pm25Data,
+  rainData,
+  humidityData,
+  temp,
+  humidity,
+  wind,
+  pm25,
+  alertData,
 
-// 请求通知权限
-async function ensurePushPermission() {
-  try {
-    const { status: existing } = await Notifications.getPermissionsAsync();
-    if (existing === 'granted') return true;
-    const { status } = await Notifications.requestPermissionsAsync();
-    return status === 'granted';
-  } catch (e) {
-    console.warn('ensurePushPermission error:', e);
-    return false;
-  }
-}
+  // alarm
+  isAlarmPlaying,
+  onToggleAlarm,
 
-// 发送一条即时通知
-async function sendAlertNotification({ title, body }) {
-  try {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title,
-        body,
-        sound: 'default',
-        priority: Notifications.AndroidNotificationPriority.HIGH,
-      },
-      trigger: null,
-    });
-  } catch (e) {
-    console.warn('scheduleNotification error:', e);
-  }
-}
-
-export default function HomeScreen() {
-  const navigation = useNavigation();
+  // navigation callbacks
+  onOpenChatbot,
+  onOpenChecklist,
+  onOpenSOS,
+  onOpenWeatherMap,
+  onNavigateRoute, // generic route navigation for carousels
+}) {
   const insets = useSafeAreaInsets();
 
-  // Loading/Refresh
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Location
-  const [location, setLocation] = useState(null);
-
-  // Main metrics
-  const [temp, setTemp] = useState('--');
-  const [humidity, setHumidity] = useState('--');
-  const [wind, setWind] = useState('--');
-  const [pm25, setPm25] = useState('--');
-
-  // Map overlay data
-  const [pm25Data, setPm25Data] = useState([]);
-  const [rainData, setRainData] = useState([]);
-  const [humidityData, setHumidityData] = useState([]);
-
-  // UI
+  // UI-only state
   const [showContacts, setShowContacts] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const advertImages = useMemo(() => [Adv1, Adv2, Adv3, Adv4, Adv5], []);
 
-  // ✅ Profile 通知开关
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const loadNotificationFlag = useCallback(async () => {
-    try {
-      const v = await AsyncStorage.getItem('settings.notifications');
-      setNotificationsEnabled(v === null ? true : v === 'true'); // 默认 ON
-    } catch (e) {
-      console.warn('loadNotificationFlag error:', e);
-    }
-  }, []);
-
-  // ===== Alarm sound state =====
-  const [alarmSound, setAlarmSound] = useState(null);
-  const [isAlarmPlaying, setIsAlarmPlaying] = useState(false);
-
-  // ===== Mock Disaster flag（从 Profile 的开关读取） =====
-  const [mockDisasterActive, setMockDisasterActive] = useState(false);
-  const loadMockFlag = useCallback(async () => {
-    try {
-      const v = await AsyncStorage.getItem('dev.mockDisaster');
-      setMockDisasterActive(v === 'true');
-    } catch (e) {
-      console.warn('loadMockFlag error:', e);
-    }
-  }, []);
-
-  const toggleAlarm = useCallback(async () => {
-    try {
-      if (isAlarmPlaying && alarmSound) {
-        await alarmSound.stopAsync();
-        await alarmSound.unloadAsync();
-        setAlarmSound(null);
-        setIsAlarmPlaying(false);
-        return;
-      }
-      await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-      const { sound } = await Audio.Sound.createAsync(
-        require('../assets/quickactionbar/alarm.mp3'),
-        { isLooping: true, volume: 1.0 }
-      );
-      setAlarmSound(sound);
-      await sound.playAsync();
-      setIsAlarmPlaying(true);
-    } catch (e) {
-      console.log('Alarm toggle error:', e);
-    }
-  }, [isAlarmPlaying, alarmSound]);
-
-  useEffect(() => {
-    return () => { if (alarmSound) alarmSound.unloadAsync(); };
-  }, [alarmSound]);
-
-  // ------- Load All ----------
-  const loadAll = useCallback(async () => {
-    try {
-      setLoading(true);
-      const perm = await Location.requestForegroundPermissionsAsync();
-      if (perm.status !== 'granted') {
-        setLoading(false);
-        return;
-      }
-      const pos = await Location.getCurrentPositionAsync();
-      const userLoc = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-      setLocation(userLoc);
-
-      const { air, rh, wind: windObj, pm, rain } = await getAll(userLoc);
-
-      if (air?.value != null) setTemp(Number(air.value).toFixed(1));
-      if (rh?.value != null) setHumidity(Math.round(rh.value));
-      if (windObj?.speed != null) setWind(Number(windObj.speed).toFixed(1));
-      if (pm?.value != null) setPm25(Math.round(pm.value));
-
-      setHumidityData(Array.isArray(rh?.overlays) ? rh.overlays : []);
-      setRainData(Array.isArray(rain?.overlays) ? rain.overlays : []);
-      setPm25Data(Array.isArray(pm?.overlays) ? pm.overlays : []);
-    } catch (e) {
-      console.log('loadAll error:', e);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadAll();
-    loadMockFlag();
-    loadNotificationFlag();
-  }, [loadAll, loadMockFlag, loadNotificationFlag]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadMockFlag();
-      loadNotificationFlag();
-    }, [loadMockFlag, loadNotificationFlag])
-  );
-
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadAll();
-    loadMockFlag();
-    loadNotificationFlag();
-  }, [loadAll, loadMockFlag, loadNotificationFlag]);
-
-  const advice = () => {
-    if (temp !== '--' && Number(temp) > 33) return "It's very hot — stay hydrated.";
-    if (pm25 !== '--' && Number(pm25) > 55) return "Air quality is poor — limit outdoor activity.";
-    if (wind !== '--' && Number(wind) > 8) return "It's quite windy — take precautions.";
-    return "The weather looks generally good today.";
+  const openGalleryAt = (idx) => {
+    setGalleryIndex(idx);
+    setShowGallery(true);
   };
 
-  // —— 最近雨量 1h（不显示站名）
+  // nearest rain (presentation)
   const nearestRain1h = useMemo(() => {
     if (!rainData || rainData.length === 0) return NaN;
     const nearest = rainData.reduce((a, b) => (a.distanceKm < b.distanceKm ? a : b));
@@ -536,20 +388,15 @@ export default function HomeScreen() {
     [temp, nearestRain1h, wind]
   );
 
-  /** —— Metric Column —— */
-  const MetricColumn = ({ icon, label, value, styleOverride, valueColor }) => (
-    <View style={[styles.metricCol, styleOverride]}>
-      <Image source={icon} style={[styles.metricColIcon, { tintColor: valueColor || PRIMARY }]} />
-      <Text style={[styles.metricColLabel, { color: valueColor || TEXT_MUTED }]} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text style={[styles.metricColValue, { color: valueColor || PRIMARY }]} numberOfLines={1}>
-        {value}
-      </Text>
-    </View>
-  );
+  // advice (presentation)
+  const advice = () => {
+    if (temp !== '--' && Number(temp) > 33) return "It's very hot — stay hydrated.";
+    if (pm25 !== '--' && Number(pm25) > 55) return "Air quality is poor — limit outdoor activity.";
+    if (wind !== '--' && Number(wind) > 8) return "It's quite windy — take precautions.";
+    return "The weather looks generally good today.";
+  };
 
-  // —— 排序后的分析指标 —— //
+  // sorted metrics (presentation)
   const sortedMetrics = useMemo(() => {
     const pmVal = pm25 === '--' ? NaN : Number(pm25);
     const wVal  = wind === '--' ? NaN : Number(wind);
@@ -572,87 +419,18 @@ export default function HomeScreen() {
     return items.sort((a, b) => (b.score !== a.score ? b.score - a.score : priority[b.key] - priority[a.key]));
   }, [pm25, wind, humidity, nearestRain1h]);
 
-  // —— Mock Disaster & 风险信号 —— //
-  const riskSignals = useMemo(() => {
-    const list = [];
-    const t = Number(temp);
-    const pm = Number(pm25);
-    const w = Number(wind);
-    const r = Number.isNaN(nearestRain1h) ? NaN : Number(nearestRain1h);
-
-    if (!Number.isNaN(pm) && pm > 55) list.push(`High PM2.5 (${pm} µg/m³)`);
-    if (!Number.isNaN(w) && w > 8)    list.push(`Strong wind (${w.toFixed(1)} m/s)`);
-    if (!Number.isNaN(r) && r > 10)   list.push(`Heavy rain (${r.toFixed(1)} mm in last hour)`);
-    if (!Number.isNaN(t) && t > 33)   list.push(`High temperature (${t.toFixed(1)}°C)`);
-    return list;
-  }, [temp, pm25, wind, nearestRain1h]);
-
-  const alertData = useMemo(() => {
-    if (mockDisasterActive) {
-      return { kind: 'danger', title: 'Incident nearby', lines: ['Mock disaster active (testing)'] };
-    }
-    if (riskSignals.length > 0) {
-      return { kind: 'danger', title: 'Weather Alert', lines: riskSignals };
-    }
-    return { kind: 'safe', title: 'You are safe', lines: ['No abnormal weather detected around you.'] };
-  }, [mockDisasterActive, riskSignals]);
-
-  // ✅ 当卡片变红时推送本地通知（10min 节流；safe→danger 立刻推），尊重 Profile 开关
-  const maybeNotifyAlert = useCallback(async (alertKind, lines) => {
-    try {
-      if (!notificationsEnabled) {
-        await AsyncStorage.setItem(ALERT_KEYS.lastLevel, alertKind === 'danger' ? 'danger' : 'safe');
-        return;
-      }
-      const now = Date.now();
-      const [lastLevel, lastPushAtStr] = await Promise.all([
-        AsyncStorage.getItem(ALERT_KEYS.lastLevel),
-        AsyncStorage.getItem(ALERT_KEYS.lastPushAt),
-      ]);
-      const lastPushAt = lastPushAtStr ? Date.parse(lastPushAtStr) : 0;
-
-      if (alertKind !== 'danger') {
-        await AsyncStorage.setItem(ALERT_KEYS.lastLevel, 'safe');
-        return;
-      }
-
-      const granted = await ensurePushPermission();
-      if (!granted) return;
-
-      const fromSafeToDanger = lastLevel !== 'danger';
-      const throttled = !fromSafeToDanger && now - lastPushAt < 10 * 60 * 1000;
-
-      if (throttled) {
-        await AsyncStorage.setItem(ALERT_KEYS.lastLevel, 'danger');
-        return;
-      }
-
-      const title = 'Weather Alert';
-      const body = (lines && lines.length ? lines.slice(0, 3).join(' • ') : 'Conditions deteriorated nearby.');
-      await sendAlertNotification({ title, body });
-
-      await AsyncStorage.multiSet([
-        [ALERT_KEYS.lastLevel, 'danger'],
-        [ALERT_KEYS.lastPushAt, new Date().toISOString()],
-      ]);
-    } catch (e) {
-      console.log('maybeNotifyAlert error:', e);
-    }
-  }, [notificationsEnabled]);
-
-  useEffect(() => {
-    maybeNotifyAlert(alertData.kind, alertData.lines);
-  }, [alertData.kind, alertData.lines, maybeNotifyAlert]);
-
-  // ======== 全屏广告图集状态 ========
-  const [showGallery, setShowGallery] = useState(false);
-  const [galleryIndex, setGalleryIndex] = useState(0);
-  const advertImages = useMemo(() => [Adv1, Adv2, Adv3, Adv4, Adv5], []);
-
-  const openGalleryAt = useCallback((idx) => {
-    setGalleryIndex(idx);
-    setShowGallery(true);
-  }, []);
+  // small metric column UI
+  const MetricColumn = ({ icon, label, value, styleOverride, valueColor }) => (
+    <View style={[styles.metricCol, styleOverride]}>
+      <Image source={icon} style={[styles.metricColIcon, { tintColor: valueColor || PRIMARY }]} />
+      <Text style={[styles.metricColLabel, { color: valueColor || TEXT_MUTED }]} numberOfLines={1}>
+        {label}
+      </Text>
+      <Text style={[styles.metricColValue, { color: valueColor || PRIMARY }]} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
+  );
 
   return (
     <View
@@ -676,13 +454,8 @@ export default function HomeScreen() {
           <Text style={styles.appName}>StaySafe360</Text>
         </View>
 
-        {/* ✅ Awareness —— Header 下方（可点进全屏） */}
-        <AdvertCarousel
-          images={advertImages}
-          autoMs={4500}
-          height={170}
-          onPressImage={openGalleryAt}
-        />
+        {/* Awareness */}
+        <AdvertCarousel images={advertImages} autoMs={4500} height={170} onPressImage={openGalleryAt} />
 
         {/* Location */}
         <View style={styles.locRow}>
@@ -704,7 +477,7 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Analysis —— 四列竖排 (Icon / 名字 / 数据) */}
+          {/* Analysis */}
           <View style={styles.metricRow}>
             {sortedMetrics.map(m => (
               <MetricColumn
@@ -719,24 +492,24 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Alert Card —— Weather 下方 */}
+        {/* Alert */}
         <AlertCard kind={alertData.kind} title={alertData.title} lines={alertData.lines} />
 
         {/* Quick Action Bar */}
         <View style={[styles.quickBar, { marginTop: 4, marginBottom: 12 }]}>
-          <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('Chatbot')}>
+          <TouchableOpacity style={styles.quickBtn} onPress={onOpenChatbot}>
             <Image source={ChatbotIcon} style={styles.quickIconImg} />
             <Text style={styles.quickText}>Chatbot</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('Checklist')}>
+          <TouchableOpacity style={styles.quickBtn} onPress={onOpenChecklist}>
             <Image source={ChecklistIcon} style={styles.quickIconImg} />
             <Text style={styles.quickText}>Checklist</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickBtn} onPress={() => navigation.navigate('SOS')}>
+          <TouchableOpacity style={styles.quickBtn} onPress={onOpenSOS}>
             <Image source={SosIcon} style={styles.quickIconImg} />
             <Text style={styles.quickText}>SOS</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.quickBtn} onPress={toggleAlarm}>
+          <TouchableOpacity style={styles.quickBtn} onPress={onToggleAlarm}>
             <Image source={AlarmIcon} style={[styles.quickIconImg, isAlarmPlaying ? { tintColor: 'red' } : null]} />
             <Text style={[styles.quickText, { color: isAlarmPlaying ? 'red' : '#111827' }]}>
               {isAlarmPlaying ? 'Stop' : 'Alarm'}
@@ -750,7 +523,9 @@ export default function HomeScreen() {
           <>
             <TouchableOpacity
               activeOpacity={0.9}
-              onPress={() => navigation.navigate('WeatherMap', { location, pm25Data, rainData, humidityData })}
+              onPress={() =>
+                onOpenWeatherMap({ location, pm25Data, rainData, humidityData })
+              }
             >
               <LeafletMiniMap lat={location.latitude} lng={location.longitude} />
             </TouchableOpacity>
@@ -759,24 +534,25 @@ export default function HomeScreen() {
         ) : (
           <View style={{ paddingVertical: 24 }}>
             {loading ? <ActivityIndicator size="large" color={PRIMARY} /> : (
-              <Text style={{ textAlign: 'center', color: TEXT_MUTED }}>无法获取定位权限，无法显示地图</Text>
+              <Text style={{ textAlign: 'center', color: TEXT_MUTED }}>
+                无法获取定位权限，无法显示地图
+              </Text>
             )}
           </View>
         )}
 
-        {/* ✅ Knowledge（两个横滑卡片） */}
+        {/* Knowledge */}
         <Text style={styles.sectionTitle}>Knowledge</Text>
-        {/* Ready to Respond */}
         <KnowledgeCarousel
           items={[
             { key: 'hazards',  emoji: '🌪️', title: 'Hazards',           hint: 'Flood / Thunderstorms & Lightning / Haze / Heatwave / Coastal Flooding', route: 'HazardsHub' },
             { key: 'firstaid', emoji: '⛑️', title: 'Everyday First Aid', hint: 'Burns • CPR • Choking • Bleeding • Fracture • Heatstroke • Electric shock…', route: 'FirstAidGuides' },
           ]}
-          onPressItem={(it)=> it?.route && navigation.navigate(it.route)}
+          onPressItem={(it)=> it?.route && onNavigateRoute(it.route)}
           height={86}
         />
 
-        {/* ✅ Quiz（横向 Carousel） */}
+        {/* Quiz */}
         <Text style={styles.sectionTitle}>Quiz</Text>
         <QuizCarousel
           items={[
@@ -784,11 +560,11 @@ export default function HomeScreen() {
             { key: 'preparedness',   icon: PrepIcon,     title: 'Disaster Preparedness',  subtitle: 'Kits • Checklists • Pre-disaster training', route: 'DisasterPreparedness' },
             { key: 'everyday',       icon: EverydayIcon, title: 'Everyday First Aid',     subtitle: 'Burns • CPR • Choking • Bleeding',         route: 'EverydayFirstAid' },
           ]}
-          onPressItem={(it)=> it?.route && navigation.navigate(it.route)}
+          onPressItem={(it)=> it?.route && onNavigateRoute(it.route)}
           height={86}
         />
 
-        {/* Emergency contacts popover */}
+        {/* Emergency contacts inline (toggle if needed) */}
         {showContacts && (
           <View style={styles.contactBoxInline}>
             <Text style={styles.contactText}>📞 Emergency</Text>
@@ -802,7 +578,7 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
-      {/* ====== 全屏广告图集 Modal ====== */}
+      {/* Fullscreen gallery */}
       <GalleryModal
         visible={showGallery}
         images={advertImages}
@@ -841,7 +617,6 @@ const styles = StyleSheet.create({
   bigTemp: { fontSize: 32, fontWeight: '900', color: '#111827' },
   bigSubtitle: { marginTop: 4, color: TEXT_MUTED, fontSize: 12, fontWeight: '600' },
 
-  // —— 四列竖排 —— //
   metricRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, gap: 8 },
   metricCol: {
     flex: 1, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 6, marginHorizontal: 2,
@@ -851,7 +626,7 @@ const styles = StyleSheet.create({
   metricColLabel: { fontSize: 12, fontWeight: '600', marginBottom: 2 },
   metricColValue: { fontSize: 11, fontWeight: '800' },
 
-  sectionTitle: { fontSize: 14,fontWeight: '800', marginTop: 4, marginBottom: 6, color: '#111827' },
+  sectionTitle: { fontSize: 14, fontWeight: '800', marginTop: 4, marginBottom: 6, color: '#111827' },
 
   quickBar: {
     flexDirection: 'row', backgroundColor: CARD_BG, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 12,
@@ -863,7 +638,6 @@ const styles = StyleSheet.create({
 
   mapHint: { fontSize: 12, color: TEXT_MUTED, marginBottom: 12 },
 
-  // —— Quiz 横滑卡片样式 —— //
   quizCardH: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
     borderRadius: 14, paddingVertical: 14, paddingHorizontal: 12, elevation: 2,
@@ -874,7 +648,6 @@ const styles = StyleSheet.create({
   quizTitle: { fontSize: 16, fontWeight: '800', color: '#111827', marginBottom: 2 },
   quizSubtitle: { fontSize: 12, color: '#6b7280' },
 
-  // —— Knowledge 横滑卡片样式（Emoji） —— //
   knowledgeCardH: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff',
     borderRadius: 14, paddingVertical: 14, paddingHorizontal: 12, elevation: 2,

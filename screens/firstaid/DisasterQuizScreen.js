@@ -1,4 +1,3 @@
-// screens/firstaid/DisasterQuizScreen.js
 import React from "react";
 import {
   View,
@@ -36,12 +35,14 @@ export default function DisasterQuizScreen({
 
   if (!question) {
     return (
-      <View style={[styles.container, { justifyContent: "center" }]}>
+      <View style={{ flex: 1, backgroundColor: "#fff" }}>
         <TopBarBack title="Disaster Quiz" onBack={onBack} />
-        <Text style={styles.headerEmpty}>❌ No questions available.</Text>
-        <TouchableOpacity style={styles.menuBtn} onPress={onBack}>
-          <Text style={styles.menuTxt}>Go Back</Text>
-        </TouchableOpacity>
+        <View style={[styles.container, { justifyContent: "center" }]}>
+          <Text style={styles.headerEmpty}>❌ No questions available.</Text>
+          <TouchableOpacity style={styles.menuBtn} onPress={onBack}>
+            <Text style={styles.menuTxt}>Go Back</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -49,7 +50,6 @@ export default function DisasterQuizScreen({
   return (
     <View style={{ flex: 1, backgroundColor: "#fff" }}>
       <TopBarBack title={title} onBack={onBack} />
-
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.topRow}>
           <Text style={styles.progress}>
@@ -62,7 +62,6 @@ export default function DisasterQuizScreen({
 
         <View style={[styles.questionCard, { backgroundColor: ACCENT + "33" }]}>
           <Text style={styles.questionText}>{question.question}</Text>
-
           <View style={styles.progressBarWrapper}>
             <View
               style={[
@@ -169,6 +168,7 @@ const styles = StyleSheet.create({
     color: ACCENT,
     marginTop: 6,
     marginBottom: 10,
+    textAlign: 'center'
   },
   menuBtn: {
     backgroundColor: "#9e9e9e",
@@ -176,6 +176,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
     marginTop: 14,
+    alignSelf: 'center'
   },
   menuTxt: { color: "#fff", fontSize: 16, fontWeight: "bold" },
 });

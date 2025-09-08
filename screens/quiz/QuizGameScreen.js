@@ -9,7 +9,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QUIZ_BANK } from './quizData';
 import TopBarBack from '../../components/ui/TopBarBack';
 
-// 🔊 声音工具（受 settings.sound 控制）
 import {
   playBgm, pauseBgm, resumeBgm, stopBgm,
   playCorrect, playWrong
@@ -18,50 +17,66 @@ import {
 const ACCENT = '#0B6FB8';
 const TIME_LIMIT = 15;
 const SCORE_PER_CORRECT = 20;
-const PROGRESS_KEY = 'quizProgress'; // ✅ 统一存储键
+const PROGRESS_KEY = 'quizProgress';
 
 export default function QuizGameScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { disasterType = 'Earthquake', subLevel = 'Ⅰ' } = route.params || {};
+  const {
+    disasterType = 'Earthquake',
+    subLevel = 'Ⅰ',
+    backTarget,
+    backParams = {},
+  } = route.params || {};
 
-  // 题库
   const quiz = useMemo(() => QUIZ_BANK?.[disasterType]?.[subLevel] ?? [], [disasterType, subLevel]);
   const quizLength = quiz.length;
 
-  // 状态
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState(null);
   const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(TIME_LIMIT);
 
-  // 受 Profile 开关控制的震动
   const [vibrateEnabled, setVibrateEnabled] = useState(true);
   const reloadVibrateSetting = useCallback(async () => {
     try {
       const v = await AsyncStorage.getItem('settings.vibration');
-      setVibrateEnabled(v === null ? true : v === 'true'); // 默认开启
+      setVibrateEnabled(v === null ? true : v === 'true');
     } catch (e) {
       console.warn('reloadVibrateSetting error:', e);
     }
   }, []);
 
-  // 动画/计时
   const progressAnim = useRef(new Animated.Value(1)).current;
+  const handleNextRef = useRef(null);
   const timerRef = useRef(null);
   const quizStartRef = useRef(Date.now());
   const questionStartRef = useRef(Date.now());
 
-  // 当前题与作答记录
   const answersRef = useRef([]);
   const current = quiz[index];
 
-  // ====== 防并发关键：前进锁 & 去重记录 ======
-  const advancingRef = useRef(false);      // 防止 handleNext 重入
-  const lastLoggedIndexRef = useRef(-1);   // 保证同一题只 push 一次
+  const advancingRef = useRef(false);
+  const lastLoggedIndexRef = useRef(-1);
 
-  // ====== 存进度（统一为 quizProgress: 'complete'/'incomplete'） ======
+  // ✅ allow a single removal after user confirms exit
+  const allowExitRef = useRef(false);
+
+  // ===== Exit target helper =====
+  const exitToHub = useCallback(async () => {
+    try {
+      if (timerRef.current) clearInterval(timerRef.current);
+      await stopBgm();
+    } catch {}
+
+    // let the next navigation removal pass
+    allowExitRef.current = true;
+
+    // ⬅️ Go back to the root of this stack: "Select a quiz type" (QuizScreen)
+    navigation.popToTop();
+  }, [navigation]);
+
   const saveProgress = useCallback(async (finalScore) => {
     try {
       const total = quizLength * SCORE_PER_CORRECT;
@@ -77,7 +92,6 @@ export default function QuizGameScreen() {
     }
   }, [disasterType, subLevel, quizLength]);
 
-  // ✅ 一次性迁移旧数据：quiz_progress_${disasterType}（boolean -> 'complete'/'incomplete'）
   useEffect(() => {
     (async () => {
       try {
@@ -85,7 +99,7 @@ export default function QuizGameScreen() {
         const legacyRaw = await AsyncStorage.getItem(legacyKey);
         if (!legacyRaw) return;
 
-        const legacy = JSON.parse(legacyRaw); // { 'Ⅰ': true/false, ... }
+        const legacy = JSON.parse(legacyRaw);
         const raw = await AsyncStorage.getItem(PROGRESS_KEY);
         const all = raw ? JSON.parse(raw) : {};
         const node = typeof all[disasterType] === 'object' ? all[disasterType] : {};
@@ -103,10 +117,13 @@ export default function QuizGameScreen() {
     })();
   }, [disasterType]);
 
-  // ========= 生命周期：返回拦截 =========
+  // 🔒 Intercept any attempt to leave unless finished or explicitly allowed
   useEffect(() => {
     const unsub = navigation.addListener('beforeRemove', (e) => {
-      if (finished) return;
+      if (finished || allowExitRef.current) {
+        // Let the navigation happen
+        return;
+      }
       e.preventDefault();
       Alert.alert('Exit Quiz', 'Exit now? Your progress will be lost.', [
         { text: 'Cancel', style: 'cancel' },
@@ -114,41 +131,39 @@ export default function QuizGameScreen() {
           text: 'Exit',
           style: 'destructive',
           onPress: () => {
-            if (timerRef.current) clearInterval(timerRef.current);
-            navigation.dispatch(e.data.action);
+            allowExitRef.current = true; // permit the next removal
+            // If you want to go back instead of replace, uncomment below:
+            // navigation.dispatch(e.data.action);
+            exitToHub();
           },
         },
       ]);
     });
     return unsub;
-  }, [navigation, finished]);
+  }, [navigation, finished, exitToHub]);
 
-  // ========= 生命周期：震动开关同步 =========
   useEffect(() => {
     reloadVibrateSetting();
     const unsub = navigation.addListener('focus', reloadVibrateSetting);
     return unsub;
   }, [navigation, reloadVibrateSetting]);
 
-  // ========= 生命周期：BGM =========
   useEffect(() => {
-    playBgm();                 // 已受 settings.sound 控制
+    playBgm();
     return () => { stopBgm(); };
   }, []);
 
-  // ========= 工具：计时条颜色 =========
   const getTimerColor = () => {
     const ratio = timeLeft / TIME_LIMIT;
-    if (ratio <= 0.33) return '#EF4444'; // red
-    if (ratio <= 0.66) return '#F59E0B'; // amber
-    return ACCENT;                       // blue
+    if (ratio <= 0.33) return '#EF4444';
+    if (ratio <= 0.66) return '#F59E0B';
+    return ACCENT;
   };
 
-  // ========= 记录答案（同一题只记录一次）=========
   const pushAnswer = useCallback((pickedIndex) => {
     const q = quiz[index];
     if (!q) return;
-    if (lastLoggedIndexRef.current === index) return; // 去重：同一题只 push 一次
+    if (lastLoggedIndexRef.current === index) return;
     lastLoggedIndexRef.current = index;
 
     const timeSpentSec = Math.max(0, Math.round((Date.now() - questionStartRef.current) / 1000));
@@ -167,15 +182,12 @@ export default function QuizGameScreen() {
     });
   }, [quiz, index]);
 
-  // 切到新题时，允许再次记录
   useEffect(() => { lastLoggedIndexRef.current = -1; }, [index]);
 
-  // ========= 下一题 / 完成（带前进锁）=========
   const handleNext = useCallback(async () => {
-    if (finished || advancingRef.current) return; // 防重入
+    if (finished || advancingRef.current) return;
     advancingRef.current = true;
 
-    // 先记录答案
     pushAnswer(selected);
 
     const ok = selected !== null && current?.options?.[selected] === current?.answer;
@@ -186,20 +198,12 @@ export default function QuizGameScreen() {
       setIndex((p) => p + 1);
       setSelected(null);
       questionStartRef.current = Date.now();
-
-      // 🔊 进入下一题时恢复 BGM
       resumeBgm();
-
-      // 释放锁（继续答题）
       advancingRef.current = false;
     } else {
       setFinished(true);
       if (timerRef.current) clearInterval(timerRef.current);
-
-      // 🔊 完成时彻底停掉 BGM
       await stopBgm();
-
-      // 保存进度（统一 key/格式）
       await saveProgress(newScore);
 
       const timeSpentMs = Date.now() - quizStartRef.current;
@@ -210,15 +214,20 @@ export default function QuizGameScreen() {
         total: quizLength * SCORE_PER_CORRECT,
         timeSpentMs,
         answers: answersRef.current,
+        backTarget: backTarget || 'DisasterSelect',
+        backParams,
       });
-      // 不释放锁：已完成，避免晚到调用重复进入
     }
   }, [
     selected, current, score, index, quizLength,
-    navigation, disasterType, subLevel, saveProgress, pushAnswer, finished
+    navigation, disasterType, subLevel, saveProgress, pushAnswer, finished,
+    backTarget, backParams
   ]);
 
-  // ========= 计时器（到点时仅在未前进时触发）=========
+  useEffect(() => {
+    handleNextRef.current = handleNext;
+  }, [handleNext]);
+
   useEffect(() => {
     if (finished) return;
 
@@ -231,33 +240,35 @@ export default function QuizGameScreen() {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerRef.current);
-          setSelected(null);
-          // 只有还没在前进流程中时才触发（避免与按钮点击并发）
-          if (!advancingRef.current) handleNext();
+        setSelected(null);
+          if (!advancingRef.current) {
+            // call the latest handleNext without recreating the effect
+            handleNextRef.current?.();
+        }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
-
     Animated.timing(progressAnim, {
       toValue: 0,
       duration: TIME_LIMIT * 1000,
       useNativeDriver: false,
     }).start();
 
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [index, finished, handleNext, progressAnim]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+  };
+  }, [index, finished]);
 
-  // ========= 渲染 =========
   if (!current) {
     return (
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
         <TopBarBack title={`${disasterType} - Sublevel ${subLevel}`} />
         <View style={[styles.container, { justifyContent: 'center' }]}>
           <Text style={styles.header}>❌ No questions available.</Text>
-          <TouchableOpacity style={styles.menuButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.menuText}>Go Back</Text>
+          <TouchableOpacity style={styles.menuButton} onPress={exitToHub}>
+            <Text style={styles.menuText}>Back to Hub</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -309,14 +320,8 @@ export default function QuizGameScreen() {
               if (timerRef.current) clearInterval(timerRef.current);
 
               const correct = current.options[idx] === current.answer;
-
-              // 🔊 答题瞬间暂停 BGM，避免与 SFX 叠音
               pauseBgm();
-
-              // ✅ 仅当开启时且答错时震动
               if (!correct && vibrateEnabled) Vibration.vibrate(200);
-
-              // 🔊 播放对/错音效
               correct ? playCorrect() : playWrong();
             }}
             disabled={selected !== null || finished}
@@ -343,7 +348,6 @@ export default function QuizGameScreen() {
   );
 }
 
-// ================= Styles =================
 const styles = StyleSheet.create({
   container: {
     padding: 20,
@@ -374,7 +378,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold'
   },
-
   questionCard: {
     padding: 20,
     borderRadius: 12,
@@ -386,7 +389,6 @@ const styles = StyleSheet.create({
     color: '#222',
     marginBottom: 10
   },
-
   progressBarWrapper: {
     height: 6,
     backgroundColor: '#eee',
@@ -398,7 +400,6 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 5
   },
-
   option: {
     backgroundColor: '#fff',
     padding: 15,
@@ -418,7 +419,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#222'
   },
-
   explanation: {
     fontSize: 14,
     fontStyle: 'italic',
@@ -437,7 +437,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16
   },
-
   menuButton: {
     backgroundColor: '#9e9e9e',
     padding: 14,

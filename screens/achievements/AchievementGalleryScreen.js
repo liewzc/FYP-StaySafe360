@@ -116,12 +116,17 @@ export default function AchievementGalleryScreen({
   onSelectSeries,
   sortLabel,
   onToggleSort,
+  onClear,
   refreshing,
   onRefresh,
   items,
 }) {
   const RightControls = (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      <TouchableOpacity onPress={onClear} style={styles.clearButton} activeOpacity={0.85}>
+        <MaterialCommunityIcons name="trash-can-outline" size={18} color="#ef4444" />
+        <Text style={styles.clearButtonText}>Clear</Text>
+      </TouchableOpacity>
       <TouchableOpacity onPress={onToggleSort} style={styles.sortButton}>
         <Ionicons name="swap-vertical" size={18} color={COLORS.ACCENT} />
         <Text style={styles.sortButtonText}>{sortLabel}</Text>
@@ -131,7 +136,13 @@ export default function AchievementGalleryScreen({
 
   return (
     <SafeAreaView style={styles.container}>
-      <TopBarBack title="Achievements" iconColor={COLORS.TEXT} backgroundColor={COLORS.BG} showBorder rightSlot={RightControls} />
+      <TopBarBack
+        title="Achievements"
+        iconColor={COLORS.TEXT}
+        backgroundColor={COLORS.BG}
+        showBorder
+        rightSlot={RightControls}
+      />
 
       <View style={styles.filterBarWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterBar}>
@@ -165,6 +176,8 @@ export default function AchievementGalleryScreen({
 /* ---------------- Styles ---------------- */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.BG },
+  clearButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 6, marginRight: 2 },
+  clearButtonText: { color: '#ef4444', fontWeight: '800', marginLeft: 6 },
   sortButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, paddingVertical: 6, marginRight: 4 },
   sortButtonText: { color: COLORS.ACCENT, fontWeight: '700', marginLeft: 6 },
   filterBarWrap: { height: 52, paddingTop: 6 },

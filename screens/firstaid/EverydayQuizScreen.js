@@ -37,6 +37,31 @@ const TITLE_BY_KEY = {
   smoke_inhalation: '💨 Smoke Inhalation',
 };
 
+/* ---------- Helpers to persist attempts for the Results tab ---------- */
+function nowISO() {
+  return new Date().toISOString();
+}
+function genId() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+async function appendAttemptIndex(idxItem) {
+  try {
+    const raw = await AsyncStorage.getItem('attemptIndex');
+    const arr = raw ? JSON.parse(raw) : [];
+    arr.push(idxItem);
+    await AsyncStorage.setItem('attemptIndex', JSON.stringify(arr));
+  } catch (e) {
+    console.error('❌ Failed to append attemptIndex:', e);
+  }
+}
+async function writeAttemptDetail(id, detail) {
+  try {
+    await AsyncStorage.setItem(`attempt:${id}`, JSON.stringify(detail));
+  } catch (e) {
+    console.error('❌ Failed to write attempt detail:', e);
+  }
+}
+
 export default function EverydayQuizScreen() {
   const route = useRoute();
   const navigation = useNavigation();
@@ -184,6 +209,32 @@ export default function EverydayQuizScreen() {
   // ====== 关键修复 2：前进锁，防止 handleNext 并发 ======
   const advancingRef = useRef(false);
 
+  // —— Persist finished run for Results tab (kind: 'firstaid') ——
+  const persistAttemptLocally = useCallback(async ({ finalScore20, total20, timeSpentMs }) => {
+    const id = genId();
+    const created_at = nowISO();
+
+    const idxItem = {
+      id,
+      kind: 'firstaid',            // <- ResultContainer filters by this
+      disasterType: resolvedTitle, // display title (can include emoji)
+      subLevel: sub,
+      score: Number(finalScore20),
+      total: Number(total20),
+      created_at,
+    };
+
+    const detail = {
+      ...idxItem,
+      level: 'main',
+      answers: answersRef.current,
+      timeSpentMs,
+    };
+
+    await appendAttemptIndex(idxItem);
+    await writeAttemptDetail(id, detail);
+  }, [resolvedTitle, sub]);
+
   // 下一题 / 完成
   const handleNext = useCallback(async () => {
     if (finished || advancingRef.current) return; // 防重入
@@ -219,6 +270,13 @@ export default function EverydayQuizScreen() {
       // 🔊 完成时停止并释放 BGM
       await stopBgm();
 
+      // ✅ Save this attempt so it appears under the ⛑️ First Aid tab in Results
+      try {
+        await persistAttemptLocally({ finalScore20, total20, timeSpentMs });
+      } catch (e) {
+        console.error('❌ Failed to persist Everyday attempt:', e);
+      }
+
       navigation.replace('FirstAidResult', {
         score: finalScore20,
         total: total20,
@@ -242,6 +300,7 @@ export default function EverydayQuizScreen() {
     resolvedTitle,
     sub,
     finished,
+    persistAttemptLocally,
   ]);
 
   // ====== 关键修复 3：倒计时超时只在未前进时触发 handleNext ======
@@ -305,7 +364,7 @@ export default function EverydayQuizScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 使用 TopBarBack 组件替换原有的顶部栏 */}
+      {/* 统一顶部栏 */}
       <TopBarBack
         title={`${resolvedTitle} — Sublevel ${sub}`}
         onBack={handleBack}
