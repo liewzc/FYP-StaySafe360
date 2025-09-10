@@ -1,8 +1,8 @@
 // utils/sound.js
-import { Audio } from 'expo-av';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Audio } from "expo-av";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const SOUND_KEY = 'settings.sound';
+const SOUND_KEY = "settings.sound";
 
 // ===== 内部状态（单例） =====
 let bgmSound = null;
@@ -12,7 +12,7 @@ let audioModeSet = false;
 export async function isSoundEnabled() {
   try {
     const v = await AsyncStorage.getItem(SOUND_KEY);
-    return v === null ? true : v === 'true'; // 默认开启
+    return v === null ? true : v === "true"; // 默认开启
   } catch {
     return true;
   }
@@ -32,7 +32,7 @@ async function ensureAudioMode() {
     });
     audioModeSet = true;
   } catch (e) {
-    console.log('ensureAudioMode error', e);
+    console.log("ensureAudioMode error", e);
   }
 }
 
@@ -45,21 +45,24 @@ export async function playBgm() {
     if (bgmSound) {
       const status = await bgmSound.getStatusAsync();
       if (!status.isLoaded) {
-        await bgmSound.loadAsync(require('../assets/sfx/bgm.mp3'), { isLooping: true, volume: 0.35 });
+        await bgmSound.loadAsync(require("../assets/sfx/bgm.mp3"), {
+          isLooping: true,
+          volume: 0.35,
+        });
       }
       if (!status.isPlaying) await bgmSound.playAsync();
       return bgmSound;
     }
 
     const { sound } = await Audio.Sound.createAsync(
-      require('../assets/sfx/bgm.mp3'),
+      require("../assets/sfx/bgm.mp3"),
       { isLooping: true, volume: 0.35 }
     );
     bgmSound = sound;
     await bgmSound.playAsync();
     return bgmSound;
   } catch (e) {
-    console.log('playBgm error', e);
+    console.log("playBgm error", e);
     return null;
   }
 }
@@ -70,7 +73,7 @@ export async function pauseBgm() {
     const status = await bgmSound.getStatusAsync();
     if (status.isLoaded && status.isPlaying) await bgmSound.pauseAsync();
   } catch (e) {
-    console.log('pauseBgm error', e);
+    console.log("pauseBgm error", e);
   }
 }
 
@@ -80,7 +83,7 @@ export async function resumeBgm() {
     const status = await bgmSound.getStatusAsync();
     if (status.isLoaded && !status.isPlaying) await bgmSound.playAsync();
   } catch (e) {
-    console.log('resumeBgm error', e);
+    console.log("resumeBgm error", e);
   }
 }
 
@@ -90,7 +93,7 @@ export async function stopBgm() {
     await bgmSound.stopAsync();
     await bgmSound.unloadAsync();
   } catch (e) {
-    console.log('stopBgm error', e);
+    console.log("stopBgm error", e);
   } finally {
     bgmSound = null;
   }
@@ -102,15 +105,16 @@ export async function playCorrect() {
   await ensureAudioMode();
   try {
     const { sound } = await Audio.Sound.createAsync(
-      require('../assets/sfx/correct.mp3'),
+      require("../assets/sfx/correct.mp3"),
       { volume: 0.85 }
     );
     await sound.playAsync();
     sound.setOnPlaybackStatusUpdate((s) => {
-      if (s.didJustFinish || s.isInterrupted) sound.unloadAsync().catch(() => {});
+      if (s.didJustFinish || s.isInterrupted)
+        sound.unloadAsync().catch(() => {});
     });
   } catch (e) {
-    console.log('playCorrect error', e);
+    console.log("playCorrect error", e);
   }
 }
 
@@ -119,15 +123,16 @@ export async function playWrong() {
   await ensureAudioMode();
   try {
     const { sound } = await Audio.Sound.createAsync(
-      require('../assets/sfx/wrong.mp3'),
+      require("../assets/sfx/wrong.mp3"),
       { volume: 0.85 }
     );
     await sound.playAsync();
     sound.setOnPlaybackStatusUpdate((s) => {
-      if (s.didJustFinish || s.isInterrupted) sound.unloadAsync().catch(() => {});
+      if (s.didJustFinish || s.isInterrupted)
+        sound.unloadAsync().catch(() => {});
     });
   } catch (e) {
-    console.log('playWrong error', e);
+    console.log("playWrong error", e);
   }
 }
 
@@ -136,7 +141,7 @@ export async function playCorrectWait() {
   if (!(await isSoundEnabled())) return;
   await ensureAudioMode();
   const { sound } = await Audio.Sound.createAsync(
-    require('../assets/sfx/correct.mp3'),
+    require("../assets/sfx/correct.mp3"),
     { volume: 0.85 }
   );
   await sound.playAsync();
@@ -154,7 +159,7 @@ export async function playWrongWait() {
   if (!(await isSoundEnabled())) return;
   await ensureAudioMode();
   const { sound } = await Audio.Sound.createAsync(
-    require('../assets/sfx/wrong.mp3'),
+    require("../assets/sfx/wrong.mp3"),
     { volume: 0.85 }
   );
   await sound.playAsync();

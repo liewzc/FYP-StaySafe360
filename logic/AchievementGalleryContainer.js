@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import AchievementGalleryScreen from '../screens/achievements/AchievementGalleryScreen';
 import { computeAchievementProgressMap } from '../utils/achievements';
-import { ACHIEVEMENTS } from '../assets/achievement/achievementsCatalog';
+import { ACHIEVEMENTS } from '../screens/achievements/achievementsCatalog';
 
 export default function AchievementGalleryContainer() {
   const series = useMemo(

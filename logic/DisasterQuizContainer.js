@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import DisasterQuizScreen from '../screens/firstaid/DisasterQuizScreen';
-import { QUIZ_BANK } from '../assets/firstaid/disasterQuizData';
+import { QUIZ_BANK } from '../screens/firstaid/disasterQuizData';
 // (optional) still log to server if you want:
 import { logDisasterResult } from '../utils/quizStorage';
 
