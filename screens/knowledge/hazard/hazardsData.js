@@ -1,6 +1,5 @@
 // screens/knowledge/hazard/hazardsData.js
 
-// —— 五大类的本地化学习内容（可离线显示）——
 export const HAZARDS = {
   Flood: {
     key: 'Flood',
@@ -270,5 +269,4 @@ export const HAZARDS = {
   }
 };
 
-// 给 Hub 用：统一列表
 export const HAZARD_KEYS = ['Flood', 'StormsLightning', 'Haze', 'Heatwave', 'CoastalFlooding'];

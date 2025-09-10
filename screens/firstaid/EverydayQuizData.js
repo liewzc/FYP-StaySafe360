@@ -1,14 +1,11 @@
 // screens/firstaid/EverydayQuizData.js
 
-// 把一套题复用到 Ⅰ~Ⅳ（先保证不报 “No quiz data”）
 const makeAllSublevels = (base) => ({
   'Ⅰ': base,
   'Ⅱ': base,
   'Ⅲ': base,
   'Ⅳ': base,
 });
-
-// ==== 10 个类别各 5 题（可自行扩充/替换）====
 
 // 1) 🔥 Burns
 const burns = [
@@ -413,5 +410,4 @@ export const firstAidQuizData = {
   '💨 Smoke Inhalation': { main: makeAllSublevels(smoke) },
 };
 
-// 兼容其他导入写法
 export default firstAidQuizData;

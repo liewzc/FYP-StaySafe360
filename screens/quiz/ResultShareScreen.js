@@ -14,7 +14,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logDisasterResult } from '../../utils/quizStorage';
-// ✅ 成就：满分时标记子关已完成 + 分享成就自增
+// Achievements: mark sublevel completed on perfect score + increment share metric
 import { recordLocalAttempt, logShareOnce, markDisaster10SublevelComplete } from '../../utils/achievements';
 import TopBarBack from '../../components/ui/TopBarBack';
 
@@ -22,6 +22,7 @@ export default function ResultShareScreen() {
   const navigation = useNavigation();
   const route = useRoute();
 
+  // Route params (with sensible defaults)
   const {
     score: rawScore = 0,
     total: rawTotal = 100,
@@ -31,9 +32,11 @@ export default function ResultShareScreen() {
     answers = [],
   } = route.params || {};
 
+  // Sanitize inputs
   const score = Number.isFinite(rawScore) ? rawScore : 0;
   const total = Number.isFinite(rawTotal) && rawTotal > 0 ? rawTotal : 100;
 
+  // Percentage & thresholds
   const pct = useMemo(
     () => Math.max(0, Math.min(100, Math.round((score / total) * 100))),
     [score, total]
@@ -44,7 +47,7 @@ export default function ResultShareScreen() {
   const accent = isPerfect ? '#10B981' : isGood ? '#0B6FB8' : '#EF4444';
   const accentSoft = isPerfect ? '#E8FFF6' : isGood ? '#F1F7FE' : '#FFF1F2';
 
-  // 分数动画
+  // Dynamic accent colors based on result
   const animVal = useRef(new Animated.Value(0)).current;
   const [displayScore, setDisplayScore] = useState(0);
   const [showReview, setShowReview] = useState(false);
@@ -55,7 +58,7 @@ export default function ResultShareScreen() {
     return () => animVal.removeListener(id);
   }, [score, animVal]);
 
-  // 保存 attempt（日志、索引、成就）
+  // Score animation
   const loggedRef = useRef(false);
   useEffect(() => {
     if (loggedRef.current) return;

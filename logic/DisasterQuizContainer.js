@@ -26,7 +26,7 @@ const TITLE_MAP = {
   CoastalFlooding: 'Coastal / High Tide Flooding',
 };
 
-/* ---------- local attempt persistence helpers (Results tab expects these) ---------- */
+// local attempt persistence helpers (Results tab expects these)
 function nowISO() {
   return new Date().toISOString();
 }

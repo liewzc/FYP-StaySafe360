@@ -14,6 +14,7 @@ export default function AttemptDetailScreen() {
   const [attempt, setAttempt] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Load attempt detail by id from AsyncStorage
   useEffect(() => {
     (async () => {
       try {
@@ -26,11 +27,13 @@ export default function AttemptDetailScreen() {
     })();
   }, [attemptId]);
 
+  // Compute score percentage
   const scorePct = useMemo(() => {
     if (!attempt?.total) return 0;
     return Math.round((attempt.score / attempt.total) * 100);
   }, [attempt]);
 
+  // Loading state
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -42,6 +45,7 @@ export default function AttemptDetailScreen() {
     );
   }
 
+  // Missing attempt / invalid id
   if (!attempt) {
     return (
       <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -57,7 +61,6 @@ export default function AttemptDetailScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#f7fafc' }}>
-      {/* 使用 TopBarBack 组件 */}
       <TopBarBack title="Attempt Details" />
       
       <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 24 }]}>
@@ -131,7 +134,7 @@ export default function AttemptDetailScreen() {
 const styles = StyleSheet.create({
   container: { 
     padding: 18, 
-    paddingTop: 12, // 减少顶部内边距
+    paddingTop: 12, 
     backgroundColor: '#f7fafc', 
     flexGrow: 1 
   },

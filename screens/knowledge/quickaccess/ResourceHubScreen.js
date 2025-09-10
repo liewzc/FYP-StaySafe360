@@ -18,7 +18,7 @@ const FILTERS = ['All', 'Official', 'Article'];
 export default function ResourceHubScreen() {
   const navigation = useNavigation();
 
-  // flatten all sections
+  // Flatten all sections into a single list for filtering/search
   const flatList = useMemo(() => {
     const all = [
       ...(RESOURCE_HUB_DATA.featured || []),
@@ -45,13 +45,14 @@ export default function ResourceHubScreen() {
 
   useEffect(() => { loadSaved(); }, [loadSaved]);
 
-  // 回到该页面时刷新（从其它页面加/删书签后保持同步）
+  // Refresh when returning to this screen
   useFocusEffect(
     useCallback(() => {
       loadSaved();
     }, [loadSaved])
   );
 
+  // Open external/internal resource; guard against missing URLs
   const openResource = (item) => {
     const url = item?.url;
     if (!url) {
@@ -59,12 +60,13 @@ export default function ResourceHubScreen() {
       return;
     }
     if (url.startsWith('app://')) {
-      // 这里保留给你 app 内部的深链路由需要时再接
+      // Reserved for future deep links inside the app
       return;
     }
     Linking.openURL(url).catch(() => Alert.alert('Cannot open link'));
   };
 
+  // Apply text search + type filter
   const filtered = useMemo(() => {
     const f = flatList.filter((it) => {
       // type filter
@@ -99,7 +101,6 @@ export default function ResourceHubScreen() {
         tags: Array.isArray(item.tags) ? item.tags : [],
         icon: item.icon || '📄',
       });
-      // 乐观更新
       setSavedMap((prev) => ({ ...prev, [item.id]: nextOn || false }));
     } catch (e) {
       console.warn('Bookmark update failed:', e);

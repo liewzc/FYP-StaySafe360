@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { HAZARDS, HAZARD_KEYS } from './hazardsData';
-import TopBarBack from '../../../components/ui/TopBarBack'; // 导入标题栏组件
+import TopBarBack from '../../../components/ui/TopBarBack'; 
 
 const PRIMARY = '#0b6fb8';
 const MUTED = '#6b7280';
@@ -52,7 +52,6 @@ export default function HazardsHubScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 使用 TopBarBack 组件 */}
       <TopBarBack title="Hazards Hub" />
       
       <ScrollView
@@ -63,7 +62,6 @@ export default function HazardsHubScreen() {
       >
         <Text style={styles.subtitle}>Learn the essentials, then dive deeper by topic.</Text>
 
-        {/* 二列四宫格 */}
         <View style={styles.grid}>
           {HAZARD_KEYS.map((k) => {
             const h = HAZARDS[k];
@@ -90,7 +88,7 @@ export default function HazardsHubScreen() {
 const styles = StyleSheet.create({
   container: { 
     paddingHorizontal: 16, 
-    paddingTop: 12, // 减少顶部内边距
+    paddingTop: 12,
     backgroundColor: '#fff' 
   },
 
@@ -102,7 +100,6 @@ const styles = StyleSheet.create({
     marginBottom: 12 
   },
 
-  // 二列网格
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

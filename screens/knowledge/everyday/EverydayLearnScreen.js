@@ -6,9 +6,10 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import TopBarBack from '../../../components/ui/TopBarBack';
-import BookmarkStar from '../../../components/ui/BookmarkStar'; // ★ 新增
+import BookmarkStar from '../../../components/ui/BookmarkStar'; 
 import { markArticleRead } from '../../../utils/achievements';
 
+// Image assets by topic key
 const IMAGES = {
   burns:       require('../../../assets/firstaid_images/burn.png'),
   bleeding:    require('../../../assets/firstaid_images/bleeding.png'),
@@ -22,6 +23,7 @@ const IMAGES = {
   smoke:       require('../../../assets/firstaid_images/smoke_inhalation.png'),
 };
 
+// Human-readable titles per topic
 const TITLES = {
   burns: 'Burns / Scalds',
   bleeding: 'Bleeding',
@@ -35,7 +37,8 @@ const TITLES = {
   smoke: 'Smoke Inhalation',
 };
 
-const CONTENT = { /* —— 你的原内容保持不变 —— */ 
+// Content blocks for each topic: quick actions, things to avoid, when to seek help, prevention tips
+const CONTENT = { 
   burns: { quick: ['Cool the burn under cool running water for 20 minutes.', 'Remove rings/watches near the area before swelling.', 'Cover loosely with sterile non-stick dressing or clean plastic wrap.'],
     dont: ['❌ No ice, butter, toothpaste, oil or creams.', '❌ Do not break blisters.'],
     seek: ['Deep/large burns, face/hands/genitals, electrical/chemical burns.', 'Signs of shock or difficulty breathing — call 995.'],
@@ -88,6 +91,7 @@ const CONTENT = { /* —— 你的原内容保持不变 —— */
   },
 };
 
+// Simple bullet row used in lists
 function Bullet({ text }) {
   return (
     <View style={{ flexDirection: 'row', marginBottom: 6 }}>
@@ -105,7 +109,6 @@ export default function EverydayLearnScreen() {
   const image = IMAGES[topicKey];
   const data = CONTENT[topicKey];
 
-  // 🔍 全屏预览控制
   const [showImage, setShowImage] = useState(false);
 
   useEffect(() => {
@@ -120,7 +123,7 @@ export default function EverydayLearnScreen() {
     })();
   }, [topicKey]);
 
-  // ⭐ 供 BookmarkStar 使用的书签对象
+  // Bookmark metadata provider for BookmarkStar
   const getBookmarkItem = () => ({
     id: `everyday:${topicKey}`,
     title,
@@ -135,7 +138,6 @@ export default function EverydayLearnScreen() {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <TopBarBack title={title} />
 
-      {/* 标题下的工具条：左侧副标题，右侧收藏 */}
       <View style={stylesTop.toolbar}>
         <Text style={stylesTop.subtitle}>Simple, do-first steps. Not a substitute for professional care.</Text>
         <BookmarkStar getItem={getBookmarkItem} />
@@ -196,7 +198,6 @@ export default function EverydayLearnScreen() {
         <View style={{ height: 16 }} />
       </ScrollView>
 
-      {/* 🖼️ 全屏图片预览 Modal（轻触任意处关闭） */}
       <Modal
         visible={showImage}
         transparent

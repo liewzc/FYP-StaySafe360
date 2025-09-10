@@ -7,7 +7,6 @@ import TopBarBack from '../../components/ui/TopBarBack';
 
 const SUBLEVELS = ['Ⅰ', 'Ⅱ', 'Ⅲ', 'Ⅳ'];
 
-// 用于存储 key：把标题（含 emoji）变成稳定的下划线 key
 const normalizeToKey = (raw) => {
   if (!raw) return null;
   const noEmoji = raw.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])+/g, '');
@@ -59,7 +58,6 @@ export default function EverydaySubLevelScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 统一顶部栏 */}
       <TopBarBack
         title={`${title} — Sublevels`}
         iconName="chevron-back"
@@ -98,7 +96,6 @@ export default function EverydaySubLevelScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 当缺少 key 时的回退容器
   fallbackContainer: {
     flex: 1,
     backgroundColor: '#fff',
@@ -106,7 +103,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // 主体
   container: { padding: 16, paddingTop: 20, backgroundColor: '#fff' },
   kicker: { fontSize: 12, color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' },
   title: { fontSize: 22, fontWeight: '800', marginBottom: 4, color: '#0b6fb8', textAlign: 'center' },

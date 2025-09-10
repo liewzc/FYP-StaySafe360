@@ -132,7 +132,7 @@ export default function QuizGameScreen() {
           style: 'destructive',
           onPress: () => {
             allowExitRef.current = true; // permit the next removal
-            // If you want to go back instead of replace, uncomment below:
+
             // navigation.dispatch(e.data.action);
             exitToHub();
           },

@@ -11,7 +11,7 @@ export default function ResultContainer() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [attemptIndex, setAttemptIndex] = useState([]);
-  const [detailsById, setDetailsById] = useState({}); // <- keep details for score normalization
+  const [detailsById, setDetailsById] = useState({});
 
   const isValidDetail = useCallback((detailObj) => {
     if (!detailObj || typeof detailObj !== 'object') return false;

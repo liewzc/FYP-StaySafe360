@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { HAZARDS } from './hazardsData';
 import TopBarBack from '../../../components/ui/TopBarBack';
-import BookmarkStar from '../../../components/ui/BookmarkStar'; // ★ 新增
+import BookmarkStar from '../../../components/ui/BookmarkStar';
 import { markArticleRead } from '../../../utils/achievements';
 
 const ACCENT = '#0b6fb8';
@@ -71,7 +71,6 @@ export default function HazardLearnScreen() {
     return steps;
   }, [hazard]);
 
-  // ⭐ 组装当前页面的书签对象（供 BookmarkStar 使用）
   const getBookmarkItem = () => ({
     id: `hazard:${hazardKey}`,
     title: hazard?.title || hazardKey,
@@ -85,8 +84,7 @@ export default function HazardLearnScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <TopBarBack title={hazard.title} />
-      
-      {/* 标题下的工具条：左侧副标题，右侧收藏 */}
+
       <View style={styles.toolbar}>
         <Text style={styles.tagline}>{hazard.tagline}</Text>
         <BookmarkStar getItem={getBookmarkItem} />

@@ -10,8 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import TopBarBack from '../../components/ui/TopBarBack'; // 导入标题栏组件
+import TopBarBack from '../../components/ui/TopBarBack'; // Use unified title bar
 
+// Quiz category cards
 const DISASTERS = [
   { key: 'Flood',     label: 'Flood',     image: require('../../assets/quiz_images/flood.jpg') },
   { key: 'Lightning', label: 'Lightning', image: require('../../assets/quiz_images/lightning.jpg') },
@@ -24,20 +25,20 @@ export default function QuizScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
+  // Navigate to sublevel picker for the selected category
   const handleSelectDisaster = (type) => {
     navigation.navigate('SubLevel', { disasterType: type });
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 使用 TopBarBack 组件 */}
       <TopBarBack title="Select a quiz type" />
       
       <ScrollView
         contentContainerStyle={{
           paddingBottom: insets.bottom + 20,
           paddingHorizontal: 16,
-          paddingTop: 12, // 减少顶部内边距
+          paddingTop: 12,
         }}
       >
         <Text style={styles.subtitle}>Choose a category:</Text>
@@ -70,6 +71,7 @@ export default function QuizScreen() {
 const MUTED = '#555';
 
 const styles = StyleSheet.create({
+  // Small subtitle under the page title
   subtitle: {
     fontSize: 14,
     color: MUTED,
@@ -78,7 +80,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // 与其它页面统一的两列矩形封面卡片
+  // Two-column rectangular cover cards
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -98,7 +100,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '100%',
-    height: 130,             // ✅ 固定高度矩形（与其它页面一致）
+    height: 130,
     justifyContent: 'flex-end',
   },
   imageRadius: { borderRadius: 12 },

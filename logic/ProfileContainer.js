@@ -38,7 +38,7 @@ const FEATURED_DEFS = [
   },
 ];
 
-// --- helpers ---
+// helpers
 const base64ToUint8Array = (base64) => {
   const chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
@@ -98,7 +98,7 @@ export default function ProfileContainer() {
   );
   const [achLoading, setAchLoading] = useState(false);
 
-  // ====== load & save settings ======
+  // load & save settings
   const saveSetting = useCallback(async (key, value) => {
     try {
       await AsyncStorage.setItem(key, String(value));
@@ -123,7 +123,7 @@ export default function ProfileContainer() {
     }
   }, []);
 
-  // ====== profile ======
+  // profile
   const loadProfile = useCallback(async () => {
     try {
       setLoading(true);
@@ -167,7 +167,7 @@ export default function ProfileContainer() {
     }
   }, []);
 
-  // ====== achievements ======
+  // achievements
   const loadFeaturedAchievements = useCallback(async () => {
     try {
       setAchLoading(true);
@@ -196,7 +196,7 @@ export default function ProfileContainer() {
     }, [loadFeaturedAchievements])
   );
 
-  // ===== username save =====
+  // username save
   const onSaveUsername = useCallback(async () => {
     if (!draftUsername.trim()) {
       return Alert.alert("Validation", "Username cannot be empty.");
@@ -222,7 +222,7 @@ export default function ProfileContainer() {
     }
   }, [draftUsername]);
 
-  // ===== avatar pick & upload =====
+  // avatar pick & upload
   const pickImage = useCallback(async (source) => {
     try {
       setUploading(true);
@@ -336,7 +336,7 @@ export default function ProfileContainer() {
     ]);
   }, [pickImage]);
 
-  // ===== toggles =====
+  // toggles
   const onToggleNotifications = useCallback(
     async (v) => {
       try {
@@ -397,7 +397,7 @@ export default function ProfileContainer() {
     [saveSetting]
   );
 
-  // ===== logout =====
+  // logout
   const onLogout = useCallback(() => {
     Alert.alert("Logout", "Are you sure you want to log out?", [
       { text: "Cancel", style: "cancel" },
@@ -415,7 +415,7 @@ export default function ProfileContainer() {
     ]);
   }, []);
 
-  // ===== nav handlers =====
+  // nav handlers
   const onOpenAchievementGallery = useCallback(
     () => navigation.navigate("AchievementGallery"),
     [navigation]

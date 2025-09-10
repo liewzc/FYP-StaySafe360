@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, ScrollView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import TopBarBack from '../../../components/ui/TopBarBack'; // 导入标题栏组件
+import TopBarBack from '../../../components/ui/TopBarBack'; 
 
 const ITEMS = [
   { key: 'burns',        title: 'Burns/Scalds',     img: require('../../../assets/everydayfirstaid/burns.jpg') },
@@ -26,7 +26,6 @@ export default function EverydayHubScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 添加 TopBarBack 组件 */}
       <TopBarBack title="Everyday First Aid" />
       
       <ScrollView
@@ -58,7 +57,7 @@ const RADIUS = 12;
 const styles = StyleSheet.create({
   container: { 
     paddingHorizontal: 16, 
-    paddingTop: 12, // 减少顶部内边距，因为标题栏已经提供了空间
+    paddingTop: 12, 
     backgroundColor: '#fff' 
   },
   subtitle: { 

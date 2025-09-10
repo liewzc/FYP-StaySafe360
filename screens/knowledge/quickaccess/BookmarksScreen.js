@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 
-// 复用我们做好的顶栏（黑色 back、无圆底、靠左、标题居中）
+// Reuse the unified top bar
 import TopBarBack from '../../../components/ui/TopBarBack';
 
 const ACCENT = '#0B6FB8';
@@ -21,9 +21,10 @@ export default function BookmarksScreen() {
     const arr = raw ? JSON.parse(raw) : [];
     setItems(arr);
   }, []);
-
+  // Initial load
   useEffect(() => { load(); }, [load]);
 
+  // Open a bookmark: support internal app:// routes and external links
   const open = (it) => {
     const url = it?.url;
     if (!url) {
@@ -39,12 +40,14 @@ export default function BookmarksScreen() {
     Linking.openURL(url).catch(() => Alert.alert('Cannot open link'));
   };
 
+  // Remove a single bookmark by id
   const removeOne = async (id) => {
     const next = items.filter((x) => x.id !== id);
     await AsyncStorage.setItem('bookmarks', JSON.stringify(next));
     setItems(next);
   };
 
+  // Clear all bookmarks
   const clearAll = async () => {
     Alert.alert('Clear all bookmarks?', 'This removes all saved resources.', [
       { text: 'Cancel', style: 'cancel' },
@@ -57,17 +60,14 @@ export default function BookmarksScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 顶栏固定在顶部 */}
       <TopBarBack title="Bookmarks" iconName="chevron-back" iconColor="#000" />
       
-      {/* 内容区域使用 ScrollView */}
       <ScrollView
         contentContainerStyle={[
           styles.content,
           { paddingBottom: insets.bottom + 16 },
         ]}
       >
-        {/* 可选副标题 */}
         <Text style={styles.subtitle}>Saved resources from Resource Hub</Text>
 
         {items.length === 0 && (
@@ -114,15 +114,15 @@ const styles = StyleSheet.create({
   },
   content: { 
     paddingHorizontal: 16, 
-    paddingTop: 10, // 与顶栏的间距
+    paddingTop: 10, 
   },
-  // 顶部主标题已由 TopBarBack 统一，这里只保留小副标题
+
   subtitle: { fontSize: 12, color: MUTED, marginTop: 6, marginBottom: 10, textAlign: 'center' },
   emptyBox: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 12, padding: 14, alignItems: 'center', marginTop: 10 },
   emptyText: { color: MUTED, textAlign: 'center' },
   card: { flexDirection: 'row', gap: 10, backgroundColor: '#f8fbff', borderWidth: 1, borderColor: '#e6f1fb', borderRadius: 14, padding: 12, marginBottom: 10 },
   icon: { fontSize: 22, marginTop: 2 },
-  cardTitle: { fontSize: 16, fontWeight: '900', color: '#0f172a' }, // 字体稍加大
+  cardTitle: { fontSize: 16, fontWeight: '900', color: '#0f172a' }, 
   cardSub: { marginTop: 4, color: '#374151', fontSize: 13 },
   meta: { marginTop: 6, color: MUTED, fontSize: 12 },
   row: { flexDirection: 'row', gap: 8, marginTop: 10 },

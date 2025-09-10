@@ -7,7 +7,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import TopBarBack from '../../components/ui/TopBarBack';
 
-/* ---------------- Theme ---------------- */
+// Theme
 const COLORS = {
   BG: '#ffffff',
   CARD: '#ffffff',
@@ -22,7 +22,7 @@ const COLORS = {
   BADGE_TEXT: '#15803d',
 };
 
-/* ---------------- Helpers (pure) ---------------- */
+// Helpers (pure
 const clampPct = (v) => Math.max(0, Math.min(100, Math.round(v || 0)));
 const isUnlocked = (p) => clampPct(p) === 100;
 const calcStats = (items) => {
@@ -32,7 +32,7 @@ const calcStats = (items) => {
   return { total, unlocked, avg };
 };
 
-/* ---------------- UI atoms ---------------- */
+// UI atoms
 const ProgressBar = React.memo(({ value = 0 }) => {
   const pct = clampPct(value);
   return (
@@ -109,7 +109,7 @@ const StatsBar = React.memo(({ items }) => {
   );
 });
 
-/* ---------------- Presentation component ---------------- */
+// Presentation component
 export default function AchievementGalleryScreen({
   series,
   activeSeries,
@@ -168,7 +168,6 @@ export default function AchievementGalleryScreen({
   );
 }
 
-/* ---------------- Styles ---------------- */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.BG },
   sortButton: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 4, paddingVertical: 6, marginRight: 4 },

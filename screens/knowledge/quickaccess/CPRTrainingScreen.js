@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Audio } from 'expo-av';
 import { WebView } from 'react-native-webview';
-import TopBarBack from '../../../components/ui/TopBarBack'; // ← 复用统一顶部栏
+import TopBarBack from '../../../components/ui/TopBarBack'; // Reuse the unified top bar
 
 const ACCENT = '#0B6FB8';
 const BG = '#f6f8fc';
@@ -17,7 +17,7 @@ const MUTED = '#6b7280';
 const BORDER = '#e6eef8';
 const DANGER = '#dc2626';
 
-// 提取 YouTube ID（支持 watch?v=、youtu.be、embed）
+// Extract a YouTube video ID
 function getYouTubeId(input) {
   if (!input) return null;
   if (/^[A-Za-z0-9_\-]{8,}$/.test(input) && !input.includes('http')) return input;
@@ -45,19 +45,21 @@ export default function CPRTrainingScreen() {
   const navigation = useNavigation();
   const initial = route.params?.initial || null;
 
-  // 传入 video / videoId，默认使用 2PngCv7NjaI
+  // Accepts video / videoId
   const videoParam = route.params?.video || route.params?.videoId || 'https://www.youtube.com/watch?v=2PngCv7NjaI';
   const videoId = getYouTubeId(videoParam) || '2PngCv7NjaI';
 
   /* ---------------------- CPR Metronome ---------------------- */
-  const [bpm, setBpm] = useState(110);
-  const [running, setRunning] = useState(false);
-  const [tick, setTick] = useState(false);
-  const beatTimerRef = useRef(null);
-  const beepRef = useRef(null);
+  const [bpm, setBpm] = useState(110); // Target compression rate
+  const [running, setRunning] = useState(false);// Metronome on/off
+  const [tick, setTick] = useState(false);// Visual dot toggle
+  const beatTimerRef = useRef(null);// Interval handle
+  const beepRef = useRef(null);// Loaded beep sound
 
+  // If launched with initial='cpr', auto-start the metronome
   useEffect(() => { if (initial === 'cpr') setRunning(true); }, [initial]);
 
+  // Prepare audio: load beep and enable iOS silent-mode playback
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -81,6 +83,7 @@ export default function CPRTrainingScreen() {
     };
   }, []);
 
+  // Start/stop the metronome interval; clamp bpm and vibrate + beep each beat
   useEffect(() => {
     if (!running) {
       if (beatTimerRef.current) clearInterval(beatTimerRef.current);
@@ -104,15 +107,14 @@ export default function CPRTrainingScreen() {
     return () => { if (beatTimerRef.current) clearInterval(beatTimerRef.current); };
   }, [running, bpm]);
 
+  // Change BPM by delta, clamped to [60, 150]
   const changeBpm = (delta) => setBpm((v) => Math.max(60, Math.min(150, v + delta)));
 
-  /* ---------------------- UI ---------------------- */
+  // UI
   return (
     <View style={styles.container}>
-      {/* 统一风格 TopBar */}
       <TopBarBack title="CPR Training" />
-      
-      {/* 内容区域使用 ScrollView */}
+
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -147,7 +149,7 @@ export default function CPRTrainingScreen() {
           />
         </View>
 
-        {/* YouTube 教学视频（WebView） */}
+        {/* YouTube（WebView） */}
         <SectionHeader icon="🎬" title="Learn CPR (Video)" subtitle="Tap to play inline. Long press to open in YouTube." />
         <View style={styles.card}>
           <YouTubePlayer videoId={videoId} />
@@ -171,7 +173,7 @@ export default function CPRTrainingScreen() {
   );
 }
 
-/* ---------- small components ---------- */
+// small components
 function YouTubePlayer({ videoId }) {
   const containerStyle = useMemo(
     () => ({ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, overflow: 'hidden' }),
@@ -235,7 +237,7 @@ function SectionHeader({ icon, title, subtitle }) {
   );
 }
 
-/* ---------------------- styles ---------------------- */
+// styles
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
@@ -243,7 +245,7 @@ const styles = StyleSheet.create({
   },
   content: { 
     paddingHorizontal: 16,
-    paddingTop: 10, // 与顶栏的间距
+    paddingTop: 10, 
   },
   sectionHeader: { marginTop: 14, marginBottom: 6 },
   sectionTitle: { fontSize: 16, fontWeight: '900', color: TEXT },

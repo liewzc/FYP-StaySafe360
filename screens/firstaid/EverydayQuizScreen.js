@@ -9,7 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { firstAidQuizData as EverydayQuizData } from './EverydayQuizData';
 import TopBarBack from '../../components/ui/TopBarBack';
 
-// 🔊 声音工具（受 settings.sound 控制）
+// Sound helpers (respect global settings.sound)
 import {
   playBgm, pauseBgm, resumeBgm, stopBgm,
   playCorrect, playWrong
@@ -24,6 +24,7 @@ const normalizeKey = (raw = '') =>
     .toLowerCase()
     .replace(/\s+/g, '_');
 
+// Fallback titles for common first-aid categories
 const TITLE_BY_KEY = {
   burns: '🔥 Burns',
   cpr: '❤️ CPR',
@@ -37,7 +38,7 @@ const TITLE_BY_KEY = {
   smoke_inhalation: '💨 Smoke Inhalation',
 };
 
-/* ---------- Helpers to persist attempts for the Results tab ---------- */
+// Helpers to persist attempts for the Results tab
 function nowISO() {
   return new Date().toISOString();
 }
@@ -70,7 +71,7 @@ export default function EverydayQuizScreen() {
   const lvl = 'main';
   const sub = subLevel || 'Ⅰ';
 
-  /** ---------- 固定 title ---------- */
+  // Resolve a stable, display-friendly title
   const resolvedTitle = useMemo(() => {
     if (categoryTitle && EverydayQuizData?.[categoryTitle]) return categoryTitle;
 
@@ -84,7 +85,7 @@ export default function EverydayQuizScreen() {
     return categoryTitle || '⛑️ First Aid';
   }, [categoryKey, categoryTitle]);
 
-  /** ---------- 固定 quiz / quizLen / currentQ ---------- */
+  // Bind current quiz, length, and question by index
   const quizMemo = useMemo(
     () => EverydayQuizData?.[resolvedTitle]?.[lvl]?.[sub] || [],
     [resolvedTitle, lvl, sub]
@@ -92,25 +93,26 @@ export default function EverydayQuizScreen() {
   const quizLen = quizMemo.length;
   const [index, setIndex] = useState(0);
 
-  // 当前题
+  // Current question object
   const currentQ = useMemo(() => quizMemo[index], [quizMemo, index]);
 
   const [selected, setSelected] = useState(null);
-  const [score, setScore] = useState(0); // 每题 +1，结果页乘 20
+  const [score, setScore] = useState(0);
   const [finished, setFinished] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
 
+  // Progress bar
   const progressAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef(null);
 
-  // 计时：总用时 + 每题用时
+  // Timers: total quiz & per-question
   const quizStartRef = useRef(Date.now());
   const questionStartRef = useRef(Date.now());
 
-  // 每题作答详情
+  // Per-question answer log (for review)
   const answersRef = useRef([]);
 
-  // ✅ 震动开关（与 Profile 的 settings.vibration 对齐）
+  // Vibration toggle
   const [vibrateEnabled, setVibrateEnabled] = useState(true);
   const reloadVibrateSetting = useCallback(async () => {
     try {
@@ -126,7 +128,6 @@ export default function EverydayQuizScreen() {
     return unsub;
   }, [navigation, reloadVibrateSetting]);
 
-  // 统一拦截返回（物理/手势/UI）
   useEffect(() => {
     const unsub = navigation.addListener('beforeRemove', (e) => {
       if (finished) return;
@@ -146,10 +147,10 @@ export default function EverydayQuizScreen() {
     return unsub;
   }, [navigation, finished]);
 
-  // Header 返回（只 goBack，弹窗交给 beforeRemove）
+  // Header back button
   const handleBack = () => navigation.goBack();
 
-  // 🔊 进入页面播放 BGM；卸载时停止并释放
+  // Start BGM on mount; stop + unload on unmount
   useEffect(() => {
     playBgm();
     return () => {
@@ -157,12 +158,11 @@ export default function EverydayQuizScreen() {
     };
   }, []);
 
-  // ====== 关键修复 1：记录答案去重 ======
+  // Fix 1: Ensure each question is logged once
   const lastLoggedIndexRef = useRef(-1);
   const pushAnswer = useCallback(
     (pickedIndex) => {
       if (!currentQ) return;
-      // 同一题只记录一次
       if (lastLoggedIndexRef.current === index) return;
       lastLoggedIndexRef.current = index;
 
@@ -184,12 +184,10 @@ export default function EverydayQuizScreen() {
     },
     [currentQ, index]
   );
-  // 切到新题时允许再次记录
   useEffect(() => {
     lastLoggedIndexRef.current = -1;
   }, [index]);
 
-  // 存成就（全对才 complete）
   const saveCompletionStatus = useCallback(
     async (finalScore) => {
       try {
@@ -197,7 +195,7 @@ export default function EverydayQuizScreen() {
         const key = `everyday_progress_${storeKey}`;
         const json = await AsyncStorage.getItem(key);
         const progress = json ? JSON.parse(json) : {};
-        progress[sub] = finalScore === quizLen; // 每题 +1，所以 finalScore 满分为 quizLen
+        progress[sub] = finalScore === quizLen; 
         await AsyncStorage.setItem(key, JSON.stringify(progress));
       } catch (e) {
         console.error('⚠️ Save progress failed:', e);
@@ -206,7 +204,7 @@ export default function EverydayQuizScreen() {
     [categoryKey, resolvedTitle, sub, quizLen]
   );
 
-  // ====== 关键修复 2：前进锁，防止 handleNext 并发 ======
+  // Fix 2: Forward-navigation lock to prevent handleNext races
   const advancingRef = useRef(false);
 
   // —— Persist finished run for Results tab (kind: 'firstaid') ——
@@ -235,12 +233,10 @@ export default function EverydayQuizScreen() {
     await writeAttemptDetail(id, detail);
   }, [resolvedTitle, sub]);
 
-  // 下一题 / 完成
   const handleNext = useCallback(async () => {
-    if (finished || advancingRef.current) return; // 防重入
+    if (finished || advancingRef.current) return;
     advancingRef.current = true;
 
-    // 先记录答案（有去重，不会重复）
     pushAnswer(selected);
 
     const isCorrect = selected !== null && currentQ?.options?.[selected] === currentQ?.answer;
@@ -252,10 +248,8 @@ export default function EverydayQuizScreen() {
       setSelected(null);
       questionStartRef.current = Date.now();
 
-      // 🔊 进入下一题时恢复 BGM
       resumeBgm();
 
-      // 释放锁，允许进入下一题后的交互
       advancingRef.current = false;
     } else {
       setFinished(true);
@@ -267,7 +261,6 @@ export default function EverydayQuizScreen() {
       const total20 = quizLen * 20;
       const timeSpentMs = Date.now() - quizStartRef.current;
 
-      // 🔊 完成时停止并释放 BGM
       await stopBgm();
 
       // ✅ Save this attempt so it appears under the ⛑️ First Aid tab in Results
@@ -286,7 +279,6 @@ export default function EverydayQuizScreen() {
         timeSpentMs,
         answers: answersRef.current,
       });
-      // 不释放锁：已完成，避免晚到的调用再次进入
     }
   }, [
     pushAnswer,
@@ -303,7 +295,7 @@ export default function EverydayQuizScreen() {
     persistAttemptLocally,
   ]);
 
-  // ====== 关键修复 3：倒计时超时只在未前进时触发 handleNext ======
+  // Fix 3: Countdown only triggers handleNext if not already advancing
   useEffect(() => {
     if (finished) return;
 
@@ -318,7 +310,6 @@ export default function EverydayQuizScreen() {
         if (prev <= 1) {
           clearInterval(timerRef.current);
           setSelected(null);
-          // 只有还没在前进流程中时才触发（避免与按钮点击并发）
           if (!advancingRef.current) handleNext();
           return 0;
         }
@@ -364,7 +355,6 @@ export default function EverydayQuizScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* 统一顶部栏 */}
       <TopBarBack
         title={`${resolvedTitle} — Sublevel ${sub}`}
         onBack={handleBack}
@@ -403,13 +393,13 @@ export default function EverydayQuizScreen() {
 
               const correct = currentQ.options[idx] === currentQ.answer;
 
-              // 🔊 答题瞬间暂停 BGM，避免和 SFX 叠音
+              // Pause BGM to avoid overlap with SFX
               pauseBgm();
 
-              // ✅ 仅当开启时且答错时震动
+              // Vibrate on wrong answer if enabled
               if (!correct && vibrateEnabled) Vibration.vibrate(200);
 
-              // 🔊 播放对/错音效（受 settings.sound 控制）
+              // Play correct/wrong SFX
               correct ? playCorrect() : playWrong();
             }}
             disabled={selected !== null}
@@ -441,12 +431,11 @@ export default function EverydayQuizScreen() {
 const TITLE_COLOR = '#111827';
 
 const styles = StyleSheet.create({
-  // 主体
   container: {
     padding: 20,
     backgroundColor: '#fefefe',
     flexGrow: 1,
-    paddingTop: 0, // 因为顶部栏已经有了安全区域处理
+    paddingTop: 0, 
   },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
   progress: { fontSize: 14, fontWeight: 'bold', color: '#333' },
