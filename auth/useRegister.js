@@ -3,12 +3,15 @@ import { useCallback, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient"; // adjust path if needed
 
 export function useRegister() {
+  // Local state
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // Banner message for UI feedback: "", "error", or "success"
   const [banner, setBanner] = useState({ type: "", msg: "" }); // '', 'error', 'success'
   const [isLoading, setIsLoading] = useState(false);
 
+  // Derived validation
   const emailValid = useMemo(() => /\S+@\S+\.\S+/.test(email.trim()), [email]);
   const strongEnough = useMemo(() => password.length >= 6, [password]);
   const canSubmit = emailValid && strongEnough && !isLoading;
@@ -18,6 +21,7 @@ export function useRegister() {
     const u = (username || e.split("@")[0]).trim();
     const p = password;
 
+    // Basic guards
     if (!e || !p) {
       setBanner({ type: "error", msg: "Please enter email and password." });
       return { ok: false };
@@ -38,6 +42,7 @@ export function useRegister() {
     setIsLoading(true);
 
     try {
+      // Note: Supabase will send a verification email if configured
       const { data, error } = await supabase.auth.signUp({
         email: e,
         password: p,
@@ -70,6 +75,7 @@ export function useRegister() {
     }
   }, [email, username, password, emailValid, strongEnough]);
 
+  // Expose state, derived flags, setters (which also clear banner), and the submit action
   return {
     // state
     email,

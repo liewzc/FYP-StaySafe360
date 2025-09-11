@@ -1,4 +1,6 @@
 // supabaseClient.js
+
+// Creates and exports a single Supabase client instance for the app
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = 'https://wbsiowljnibegleiqfyb.supabase.co';

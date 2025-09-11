@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRegister } from "./useRegister";
 
+// UI palette
 const PRIMARY = "#0b6fb8";
 const BG = "#f5f9ff";
 const TEXT_MUTED = "#6b7280";
@@ -23,6 +24,7 @@ const CARD = "#ffffff";
 const DANGER = "#dc2626";
 const SUCCESS = "#059669";
 
+// RegisterScreen
 export default function RegisterScreen({ navigation }) {
   const {
     email,
@@ -39,9 +41,11 @@ export default function RegisterScreen({ navigation }) {
     handleRegister,
   } = useRegister();
 
+  // UI-only states/refs
   const [showPwd, setShowPwd] = useState(false); // UI-only
   const pwdRef = useRef(null);
 
+  // Submit flow: call hook, then prompt to check inbox
   const onSubmit = async () => {
     const { ok } = await handleRegister();
     if (ok) {

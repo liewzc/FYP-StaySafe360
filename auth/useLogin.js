@@ -3,23 +3,29 @@ import { useCallback, useMemo, useState } from "react";
 import { Alert } from "react-native";
 import { supabase } from "../supabaseClient"; // adjust if your client lives elsewhere
 
+// useLogin
 export function useLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Basic email format check
   const emailValid = useMemo(() => /\S+@\S+\.\S+/.test(email.trim()), [email]);
+  // Enable submit only when the form looks valid and we're not already submitting
   const canSubmit = emailValid && password.length >= 6 && !isLoading;
 
+  // Attempts to sign in via Supabase
   const handleLogin = useCallback(async () => {
     const e = email.trim();
     const p = password;
 
+    // Guard: both fields required
     if (!e || !p) {
       setLoginError("Please enter both email and password.");
       return;
     }
+    // Guard: email format
     if (!emailValid) {
       setLoginError("Please enter a valid email address.");
       return;
@@ -35,6 +41,7 @@ export function useLogin() {
       });
 
       if (error) {
+        // Normalize a common Supabase error into a clearer message
         if (error.message?.includes("Invalid login credentials")) {
           setLoginError("Wrong email or password. Please try again.");
         } else {

@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useForgotPassword } from "./useForgotPassword";
 
+// UI palette
 const PRIMARY = "#0b6fb8";
 const BG = "#f5f9ff";
 const TEXT_MUTED = "#6b7280";
@@ -20,6 +21,7 @@ const CARD = "#ffffff";
 const DANGER = "#dc2626";
 const SUCCESS = "#059669";
 
+// ForgotPasswordScreen
 export default function ForgotPasswordScreen({ navigation }) {
   const {
     email,

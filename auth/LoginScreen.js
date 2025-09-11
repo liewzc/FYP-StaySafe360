@@ -16,13 +16,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLogin } from "./useLogin";
 
+// UI palette
 const PRIMARY = "#0b6fb8";
 const BG = "#f5f9ff";
 const TEXT_MUTED = "#6b7280";
 const DANGER = "#dc2626";
 const CARD = "#ffffff";
 
+// ForgotPasswordScreen
 export default function LoginScreen({ navigation }) {
+  // Custom hook handles form state, validation, and submit logic.
   const {
     email,
     password,
