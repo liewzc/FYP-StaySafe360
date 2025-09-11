@@ -30,7 +30,7 @@ import ProfileContainer from "./logic/ProfileContainer";
 import QuizGameScreen from "./screens/quiz/QuizGameScreen";
 import SubLevelScreen from "./screens/quiz/SubLevelScreen";
 import QuizScreen from "./screens/quiz/QuizScreen";
-import AttemptDetailScreen from "./screens/quiz/AttemptDetailScreen";
+
 import ResultShareScreen from "./screens/quiz/ResultShareScreen";
 
 // Disaster preparedness flow
@@ -208,7 +208,7 @@ function AppStackWithInsets() {
       {/* Utilities */}
       <Stack.Screen name="AchievementGallery" component={AchievementGallery} />
       <Stack.Screen name="Checklist" component={ChecklistContainer} />
-      <Stack.Screen name="AttemptDetail" component={AttemptDetailScreen} />
+
 
       {/* Chatbot */}
       <Stack.Screen
