@@ -1,10 +1,10 @@
-// api/dataGov.js
-// 统一从 data.gov.sg 拉数据（优先 v2，缺失时回退 v1）。
-// 所有函数返回 { value, timestamp, overlays? }，getAll() 汇总给 HomeScreen 使用。
+// utils/dataGov.js
 
+// Unified fetchers for data.gov.sg (prefer v2; fall back to v1 when needed).
+// All functions return a normalized object like { value, timestamp, overlays? }.
 const JSON_HEADERS = { Accept: "application/json" };
 
-/* ----------------------------- helpers ----------------------------- */
+// Haversine distance in kilometers between two { latitude, longitude } points
 function distanceKm(a, b) {
   if (!a || !b) return Infinity;
   const toRad = (d) => (d * Math.PI) / 180;
@@ -19,6 +19,7 @@ function distanceKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 
+// Pick the nearest station (that has a numeric value) to the user location
 function pickNearestWithValue(userLoc, list, locKey = "location", valKey = "value") {
   const cands = list.filter(
     (s) => s?.[locKey]?.latitude && s?.[locKey]?.longitude && s[valKey] != null
@@ -31,7 +32,7 @@ function pickNearestWithValue(userLoc, list, locKey = "location", valKey = "valu
     return da < db ? a : b;
   });
 }
-
+// Safe getters for v2 response shapes (with some fallbacks)
 function safeGetReadingsV2(json) {
   return (
     json?.data?.readings ||
@@ -59,7 +60,7 @@ function safeGetTimestampV2(json) {
   );
 }
 
-/** 把 v2 相对湿度各种形态规整成 [{stationId, value}] */
+// Normalize relative humidity readings from different v2 shapes into
 function normalizeHumidityReadingsV2(json) {
   let rd =
     json?.data?.readings ||
@@ -67,7 +68,6 @@ function normalizeHumidityReadingsV2(json) {
     json?.readings ||
     null;
 
-  // 另一种结构：data.items[0].stationsReadings => [{ stationId, readings/measurements:[{type, unit, value}] }]
   if (!rd) {
     const sr = json?.data?.items?.[0]?.stationsReadings || json?.stationsReadings;
     if (Array.isArray(sr)) {
@@ -357,7 +357,7 @@ async function pm25Region(userLoc) {
   }
 }
 
-/* ---------------- Rainfall v2 + 最近1小时累计(v1) ------------------ */
+/* ---------------- Rainfall ------------------ */
 async function rainfallWithLastHour(userLoc) {
   try {
     const res = await fetch("https://api-open.data.gov.sg/v2/real-time/api/rainfall", {
@@ -371,7 +371,6 @@ async function rainfallWithLastHour(userLoc) {
       latestReadings.map((r) => [r.stationId, typeof r.value === "number" ? r.value : Number(r.value)])
     );
 
-    // 拉当天历史（v1）算最近 1 小时累积
     const now = new Date();
     const yyyy = now.getFullYear();
     const mm = String(now.getMonth() + 1).padStart(2, "0");

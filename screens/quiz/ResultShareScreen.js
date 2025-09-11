@@ -66,7 +66,7 @@ export default function ResultShareScreen() {
 
     (async () => {
       try {
-        // 1) 远端日志
+        // 1) Remote analytics/log
         await logDisasterResult({
           disasterType,
           level: null,
@@ -75,7 +75,7 @@ export default function ResultShareScreen() {
           timeSpentMs,
         });
 
-        // 2) 本地保存（供历史/统计使用）
+        // 2) Local persistence
         const attemptId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const created_at = new Date().toISOString();
         const attempt = {
@@ -97,7 +97,7 @@ export default function ResultShareScreen() {
         const summary = { id: attemptId, kind: 'disaster', disasterType, subLevel, score, total, created_at };
         await AsyncStorage.setItem('attemptIndex', JSON.stringify([summary, ...idx].slice(0, 500)));
 
-        // 3) 满分计入成就统计
+        // 3) Achievement tracking
         if (score === total) {
           await recordLocalAttempt({
             domain: 'disaster',
@@ -111,7 +111,7 @@ export default function ResultShareScreen() {
 
         AccessibilityInfo.announceForAccessibility?.('Your result has been saved.');
 
-        // 4) 满分标记子关完成
+        // 4) Mark sublevel completed if perfect
         if (isPerfect) {
           await markDisaster10SublevelComplete(disasterType, subLevel);
         }
@@ -121,6 +121,7 @@ export default function ResultShareScreen() {
     })();
   }, [disasterType, subLevel, score, timeSpentMs, total, answers, isPerfect]);
 
+  // Share score (haptics + OS share sheet) and log a one-time share event
   const handleShare = async () => {
     try {
       Haptics.impactAsync?.(Haptics.ImpactFeedbackStyle.Medium);
@@ -132,11 +133,13 @@ export default function ResultShareScreen() {
     }
   };
 
+  // Back to quiz home
   const handleBackHome = () => {
     Haptics.selectionAsync?.();
     navigation.navigate('Main', { screen: 'Quiz' });
   };
 
+  // Human-readable time spent
   const timeText = useMemo(() => {
     const sec = Math.max(0, Math.round(timeSpentMs / 1000));
     if (sec < 60) return `${sec}s`;
@@ -151,14 +154,12 @@ export default function ResultShareScreen() {
 
       <ScrollView contentContainerStyle={[styles.container, { backgroundColor: accentSoft }]}>
         <View style={styles.card} accessibilityRole="summary">
-          {/* 徽章 */}
           <View style={[styles.badge, { backgroundColor: accentSoft, borderColor: accent }]}>
             <Text style={[styles.badgeText, { color: accent }]}>
               {isPerfect ? '🏆 Perfect!' : isGood ? '👍 Well done' : '💪 Keep going'}
             </Text>
           </View>
 
-          {/* 信息 chips */}
           <View style={styles.chipsRow}>
             <View style={[styles.chip, { borderColor: accent }]}>
               <Text style={[styles.chipText, { color: accent }]}>{disasterType}</Text>
@@ -171,7 +172,6 @@ export default function ResultShareScreen() {
             </View>
           </View>
 
-          {/* 分数 + 进度条 */}
           <Text style={[styles.score, { color: accent }]} accessibilityLabel={`Score ${score} out of ${total}`}>
             {displayScore} / {total}
           </Text>
@@ -181,7 +181,6 @@ export default function ResultShareScreen() {
           </View>
           <Text style={styles.pctText}>{pct}%</Text>
 
-          {/* 文案 */}
           <Text style={styles.subtitle}>
             {isPerfect ? '✅ All correct! Outstanding work!' : '📝 Try again to aim for a perfect score!'}
           </Text>
@@ -203,7 +202,6 @@ export default function ResultShareScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* 内联 Review（与 FirstAidResultScreen 一致的文本风格） */}
           {showReview && (
             <View style={styles.reviewBlock}>
               <Text style={styles.reviewTitle}>Answer Review</Text>
@@ -238,7 +236,6 @@ export default function ResultShareScreen() {
 }
 
 const styles = StyleSheet.create({
-  // 与 FirstAidResultScreen 完全同一套命名与数值
   root: { flex: 1 },
   container: { flexGrow: 1, padding: 16 },
   card: {

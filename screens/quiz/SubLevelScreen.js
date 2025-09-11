@@ -5,8 +5,10 @@ import { useNavigation, useRoute, useIsFocused } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TopBarBack from '../../components/ui/TopBarBack';
 
+// Roman numeral sublevels I–X
 const SUB_LEVELS = ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ','Ⅵ','Ⅶ','Ⅷ','Ⅸ','Ⅹ'];
 const ACCENT = '#0b6fb8';
+// Root key for persisted quiz progress in AsyncStorage
 const PROGRESS_KEY = 'quizProgress';
 
 export default function SubLevelScreen() {
@@ -14,9 +16,10 @@ export default function SubLevelScreen() {
   const route = useRoute();
   const isFocused = useIsFocused();
   const { disasterType = 'General' } = route.params || {};
-
+  // Map of sublevel -> 'complete' | 'incomplete' (normalized from legacy shapes)
   const [progressMap, setProgressMap] = useState({});
 
+  // Load progress whenever the screen is focused or the disasterType changes.
   useEffect(() => {
     const loadProgress = async () => {
       try {
@@ -26,12 +29,13 @@ export default function SubLevelScreen() {
         let levelProgress = {};
 
         if (node) {
+          // Detect flat per-sublevel structure (Ⅰ / Ⅱ keys present)
           const looksFlat =
             typeof node['Ⅰ'] !== 'undefined' ||
             typeof node['Ⅱ'] !== 'undefined';
 
           if (looksFlat) {
-            // ✅ 兼容：boolean 转成字符串
+            // Normalize booleans -> 'complete' | 'incomplete'
             levelProgress = Object.fromEntries(
               Object.entries(node).map(([k, v]) => [
                 k,
@@ -39,7 +43,6 @@ export default function SubLevelScreen() {
               ])
             );
           } else {
-            // 兼容旧结构 easy/medium/hard
             ['easy', 'medium', 'hard'].forEach((k) => {
               if (node[k]) {
                 Object.entries(node[k]).forEach(([sub, v]) => {
@@ -58,10 +61,12 @@ export default function SubLevelScreen() {
     if (isFocused) loadProgress();
   }, [isFocused, disasterType]);
 
+  // Navigate into the selected sublevel’s quiz
   const openSub = (subLevel) => {
     navigation.navigate('QuizGame', { disasterType, subLevel });
   };
 
+  // Compute UI status for a given sublevel
   const statusConfig = (sub) => {
     const status = progressMap?.[sub];
     if (status === 'complete') {

@@ -2,18 +2,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../supabaseClient';
 
-// 最大返回条数（与 UI 兼容）
+// Max rows returned (kept in sync with UI)
 export const MAX_HISTORY = 200;
 
-// 本地兜底 key
+// Local fallback storage key per kind
 const FB_KEY = (kind) => `quiz_history_fallback_${kind}`;
 
-/** ---- 工具函数 ---- */
+// tiny helpers
 function nowISO() {
   return new Date().toISOString();
 }
 function uid() {
-  // 简单唯一 id
+  // Simple unique id (time + random)
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 async function readFallback(kind) {
@@ -33,10 +33,7 @@ async function clearFallback(kind) {
   await AsyncStorage.removeItem(FB_KEY(kind));
 }
 
-/**
- * 标准化一条记录，字段与 ResultScreen 展示对齐：
- * id, kind, disaster, level, sublevel, score, created_at
- */
+// Normalize one history row to match Result screens
 function normalizeRow(partial) {
   return {
     id: partial.id ?? uid(),
@@ -55,7 +52,7 @@ function normalizeRow(partial) {
   };
 }
 
-/** ----------------- 写入一条记录（优先 Supabase，失败落本地） ----------------- */
+// Insert a row (Supabase first; local fallback)
 async function insertHistoryRow({ kind, disaster, level, sublevel, score, time_sec }) {
   const baseRow = normalizeRow({
     kind,
@@ -67,7 +64,7 @@ async function insertHistoryRow({ kind, disaster, level, sublevel, score, time_s
     created_at: nowISO(),
   });
 
-  // 先尝试服务端写入
+  // Try server write first
   try {
     const { data: userInfo, error: userErr } = await supabase.auth.getUser();
     if (userErr) throw userErr;
@@ -82,24 +79,24 @@ async function insertHistoryRow({ kind, disaster, level, sublevel, score, time_s
       sublevel: baseRow.sublevel,
       score: typeof baseRow.score === 'string' ? baseRow.score : Number(baseRow.score),
       time_sec: baseRow.time_sec,
-      created_at: baseRow.created_at, // 若表有默认值也没关系
+      created_at: baseRow.created_at, // table default is fine as well
     });
 
     if (error) throw error;
-    // Server 写入成功
+    // Server ok
     return { ok: true, fallback: false };
   } catch (e) {
-    // 服务端失败：本地兜底
+    // Server failed → write to local fallback
     await writeFallback(kind, baseRow);
     return { ok: false, fallback: true, error: e };
   }
 }
 
-/** ----------------- 公开 API：记录灾害测验 ----------------- */
+// Public API: log Disaster quiz
 /**
  * @param {Object} p
  * @param {string} p.disasterType  - 'Earthquake' | 'Flood' ...
- * @param {string|null} p.level    - 可为 null（本流程无难度分级）
+ * @param {string|null} p.level    
  * @param {string} p.subLevel      - 'Ⅰ' | 'Ⅱ' | 'Ⅲ' | 'Ⅳ' ...
  * @param {number} p.score
  * @param {number} p.timeSpentMs
@@ -116,7 +113,7 @@ export async function logDisasterResult({ disasterType, level, subLevel, score, 
   });
 }
 
-/** ----------------- 公开 API：记录急救测验（First Aid） ----------------- */
+// Public API: log First Aid quiz
 /**
  * @param {Object} p
  * @param {string} p.categoryTitle
@@ -128,7 +125,7 @@ export async function logDisasterResult({ disasterType, level, subLevel, score, 
 export async function logFirstAidResult({ categoryTitle, level, subLevel, score, timeSpentMs }) {
   const time_sec = Math.round((timeSpentMs || 0) / 1000);
   return insertHistoryRow({
-    // ✅ Canonical kind name for First Aid
+    // Canonical kind name for First Aid
     kind: 'firstaid',
     disaster: categoryTitle,
     level: level ?? null,
@@ -138,7 +135,7 @@ export async function logFirstAidResult({ categoryTitle, level, subLevel, score,
   });
 }
 
-/** ----------------- 公开 API：读取历史（合并服务端 + 本地） ----------------- */
+// Public API: read history (server + local)
 /**
  * @param {'disaster'|'firstaid'|'everydayfirstaid'} kind
  * @param {number} limit
@@ -146,13 +143,12 @@ export async function logFirstAidResult({ categoryTitle, level, subLevel, score,
 export async function getHistory(kind, limit = 50) {
   const lim = Math.min(limit, MAX_HISTORY);
 
-  // ✅ Read both kinds for First Aid to keep legacy data visible
+  // Read both kinds for First Aid to keep legacy data visible
   const kinds = (kind === 'firstaid' || kind === 'everydayfirstaid')
     ? ['firstaid', 'everydayfirstaid']
     : [kind];
 
   let serverRows = [];
-  // 先尝试拉取服务端
   try {
     const { data: userInfo, error: userErr } = await supabase.auth.getUser();
     if (userErr) throw userErr;
@@ -179,11 +175,11 @@ export async function getHistory(kind, limit = 50) {
     serverRows = [];
   }
 
-  // 读取本地兜底（两种 kind 都读）
+  // Read local fallbacks (both kinds)
   const localBuckets = await Promise.all(kinds.map((k) => readFallback(k)));
   const localRows = localBuckets.flat().map(normalizeRow);
 
-  // 合并去重（按 created_at & disaster & sublevel & score 粗略去重）
+  // Merge & de-duplicate
   const keyOf = (x) => `${x.created_at}|${x.disaster}|${x.sublevel}|${x.score}`;
   const map = new Map();
   [...serverRows, ...localRows].forEach((row) => {
@@ -198,9 +194,9 @@ export async function getHistory(kind, limit = 50) {
   return merged.slice(0, lim);
 }
 
-/** ----------------- 公开 API：清空某类历史（服务端 + 本地） ----------------- */
+// Public API: clear history (server + local)
 export async function clearHistory(kind) {
-  // ✅ 清空本地兜底（两种 kind 都清）
+  // Clear local fallbacks
   const kinds = (kind === 'firstaid' || kind === 'everydayfirstaid')
     ? ['firstaid', 'everydayfirstaid']
     : [kind];
@@ -208,7 +204,7 @@ export async function clearHistory(kind) {
     await clearFallback(k);
   }
 
-  // 再尝试清服务端
+  // Attempt server delete
   try {
     const { data: userInfo, error: userErr } = await supabase.auth.getUser();
     if (userErr) throw userErr;
@@ -219,10 +215,10 @@ export async function clearHistory(kind) {
       .from('quiz_history')
       .delete()
       .eq('user_id', user.id)
-      .in('kind', kinds); // ← delete both
+      .in('kind', kinds); // delete both
 
     if (error) throw error;
   } catch {
-    // 忽略服务端错误（离线/未登录时依然能清本地）
+    // Ignore server errors; local clear already succeeded
   }
 }

@@ -9,14 +9,22 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const CARD_BG = "#ffffff"; // ✅ 全白
+const CARD_BG = "#ffffff"; 
 const CARD_BORDER = "#e5e7eb";
 const TITLE = "#0b6fb8";
 const MUTED = "#6b7280";
 
+/**
+ * KnowledgeScreen
+ * Landing page for guides and quick-access tools.
+ * Shows two sections:
+ *  - Ready to Respond (Hazards, Everyday First Aid)
+ *  - Quick Access (Resource Hub, Bookmarks, CPR Training)
+ */
 export default function KnowledgeScreen({ navigation }) {
   const insets = useSafeAreaInsets();
 
+  // Reusable row-style card with emoji, title, hint, and chevron/right element
   const SectionCard = ({ emoji, title, hint, onPress, right }) => (
     <TouchableOpacity
       style={styles.sectionCard}
@@ -46,10 +54,10 @@ export default function KnowledgeScreen({ navigation }) {
           { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 },
         ]}
       >
-        {/* 页面标题 */}
+        {/* Page title */}
         <Text style={styles.pageTitle}>Knowledge Hub</Text>
 
-        {/* 分区 1：Ready to Respond */}
+        {/* 1：Ready to Respond */}
         <View style={styles.sectionHeaderWrap}>
           <Text style={styles.sectionHeader}>Ready to Respond</Text>
         </View>
@@ -68,7 +76,7 @@ export default function KnowledgeScreen({ navigation }) {
           onPress={() => navigation.navigate("FirstAidGuides")}
         />
 
-        {/* 分区 2：Quick Access */}
+        {/* 2：Quick Access */}
         <Text style={[styles.sectionLabel, { marginTop: 14 }]}>
           Quick Access
         </Text>
@@ -101,6 +109,7 @@ export default function KnowledgeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 16, backgroundColor: "#fff" },
 
+  // Page heading
   pageTitle: {
     fontSize: 22,
     fontWeight: "900",
@@ -109,6 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
+  // Section headings
   sectionHeaderWrap: { marginBottom: 10 },
   sectionHeader: { fontSize: 18, fontWeight: "900", color: "#0f172a" },
 
@@ -120,6 +130,7 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
 
+  // Card rows
   sectionCard: {
     flexDirection: "row",
     alignItems: "center",

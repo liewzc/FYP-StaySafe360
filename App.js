@@ -1,4 +1,7 @@
 // App.js
+
+// App entry point: sets up navigation (tabs + stacks), auth gating via Supabase,
+// daily streak tick on launch, and push notification behavior.
 import "react-native-gesture-handler";
 import React, { useEffect, useState, useMemo } from "react";
 import { Image, ActivityIndicator, View, Platform } from "react-native";
@@ -12,54 +15,64 @@ import {
 import { supabase } from "./supabaseClient";
 import { touchDailyStreak } from "./utils/achievements";
 
-/* ✅ 通知：Expo Notifications */
+// Notifications: Expo Notifications
 import * as Notifications from "expo-notifications";
 
 // ========= Screens =========
+// Home & main tabs
 import HomeContainer from "./logic/HomeContainer";
 import CombinedQuizHubContainer from "./logic/CombinedQuizHubContainer";
 import KnowledgeScreen from "./screens/KnowledgeScreen";
 import ResultContainer from "./logic/ResultContainer";
 import ProfileContainer from "./logic/ProfileContainer";
 
+// Quiz flow (disaster)
 import QuizGameScreen from "./screens/quiz/QuizGameScreen";
 import SubLevelScreen from "./screens/quiz/SubLevelScreen";
 import QuizScreen from "./screens/quiz/QuizScreen";
 import AttemptDetailScreen from "./screens/quiz/AttemptDetailScreen";
 import ResultShareScreen from "./screens/quiz/ResultShareScreen";
 
+// Disaster preparedness flow
 import DisasterPreparedness from "./logic/DisasterPreparednessContainer";
 import DisasterSubLevelContainer from "./logic/DisasterSubLevelContainer";
 import DisasterQuiz from "./logic/DisasterQuizContainer";
+
+// Everyday first-aid flow
 import EverydayFirstAidContainer from "./logic/EverydayFirstAidContainer";
 import EverydaySubLevelScreen from "./screens/firstaid/EverydaySubLevelScreen";
 import EverydayQuizScreen from "./screens/firstaid/EverydayQuizScreen";
 import FirstAidResultScreen from "./screens/firstaid/FirstAidResultScreen";
 
+// Knowledge hub (Hazards / Everyday)
 import HazardsHubScreen from "./screens/knowledge/hazard/HazardsHubScreen";
 import HazardLearnScreen from "./screens/knowledge/hazard/HazardLearnScreen";
-
 import EverydayHubScreen from "./screens/knowledge/everyday/EverydayHubScreen";
 import EverydayLearnScreen from "./screens/knowledge/everyday/EverydayLearnScreen";
 
+// Quick access
 import ResourceHubScreen from "./screens/knowledge/quickaccess/ResourceHubScreen";
 import BookmarksScreen from "./screens/knowledge/quickaccess/BookmarksScreen";
 import CPRTrainingScreen from "./screens/knowledge/quickaccess/CPRTrainingScreen";
 
+// Other utilities / features
 import AchievementGallery from "./logic/AchievementGalleryContainer";
 import ChecklistContainer from "./logic/ChecklistContainer";
 import WeatherMapContainer from "./logic/WeatherMapContainer";
 import SOSContainer from "./logic/SOSContainer";
 import ChatbotScreen from "./screens/ChatbotScreen";
 
+// Auth screens
 import LoginScreen from "./auth/LoginScreen";
 import RegisterScreen from "./auth/RegisterScreen";
 import ForgotPassword from "./auth/ForgotPasswordScreen";
 
+// Root navigators
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 const Auth = createNativeStackNavigator();
 
+// Bottom tab icons (static images)
 const TAB_ICONS = {
   Home: require("./assets/underbutton/home.png"),
   Quiz: require("./assets/underbutton/quiz.png"),
@@ -68,6 +81,7 @@ const TAB_ICONS = {
   Profile: require("./assets/underbutton/profile.png"),
 };
 
+// Small helper for rendering tab icons with focus tint
 function TabIcon({ routeName, focused }) {
   const source = TAB_ICONS[routeName];
   return (
@@ -79,7 +93,7 @@ function TabIcon({ routeName, focused }) {
   );
 }
 
-/* ✅ 通知显示策略（前台也弹横幅 + 声音） */
+// Foreground notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -88,6 +102,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Bottom tabs
 function MainTabsWithInsets() {
   const insets = useSafeAreaInsets();
   const screenOptions = useMemo(
@@ -127,6 +142,7 @@ function MainTabsWithInsets() {
   );
 }
 
+// App stack (all screens reachable after auth)
 function AppStackWithInsets() {
   const insets = useSafeAreaInsets();
   return (
@@ -159,7 +175,6 @@ function AppStackWithInsets() {
       <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
       <Stack.Screen name="CPRTrainingScreen" component={CPRTrainingScreen} />
 
-      {/* 从 Hub 进入的灾害选择（复用 QuizScreen） */}
       <Stack.Screen name="DisasterSelect" component={QuizScreen} />
 
       {/* Disaster Preparedness */}
@@ -173,7 +188,7 @@ function AppStackWithInsets() {
       />
       <Stack.Screen name="DisasterQuiz" component={DisasterQuiz} />
 
-      {/* quiz 流程 */}
+      {/* quiz */}
       <Stack.Screen name="SubLevel" component={SubLevelScreen} />
       <Stack.Screen name="QuizGame" component={QuizGameScreen} />
       <Stack.Screen name="ResultShare" component={ResultShareScreen} />
@@ -195,7 +210,7 @@ function AppStackWithInsets() {
       <Stack.Screen name="Checklist" component={ChecklistContainer} />
       <Stack.Screen name="AttemptDetail" component={AttemptDetailScreen} />
 
-      {/* Chatbot - 整页 */}
+      {/* Chatbot */}
       <Stack.Screen
         name="Chatbot"
         component={ChatbotScreen}
@@ -222,6 +237,7 @@ function AppStackWithInsets() {
   );
 }
 
+// Auth stack (shown when no Supabase session)
 function AuthStackWithInsets() {
   const insets = useSafeAreaInsets();
   return (
@@ -244,10 +260,11 @@ function AuthStackWithInsets() {
 }
 
 export default function App() {
+  // Auth/session bootstrapping
   const [initializing, setInitializing] = useState(true);
   const [session, setSession] = useState(null);
 
-  /* ✅ Android 通知通道（保证高优先级 & 有声音/震动） */
+  // Notification channel
   useEffect(() => {
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("alerts", {
@@ -262,11 +279,12 @@ export default function App() {
     }
   }, []);
 
-  // ✅ 启动 App 时进行一次“每日打卡”（内部去重）
+  // Daily streak tick on app start
   useEffect(() => {
     touchDailyStreak().catch(() => {});
   }, []);
 
+  // Supabase session listener + initial fetch
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -281,11 +299,13 @@ export default function App() {
     );
     return () => {
       mounted = false;
+      // Handle both subscription signatures for safety
       sub?.subscription?.unsubscribe?.();
       sub?.unsubscribe?.();
     };
   }, []);
 
+  // Initial splash/loading while session is checked
   if (initializing) {
     return (
       <SafeAreaProvider>
@@ -298,6 +318,7 @@ export default function App() {
     );
   }
 
+  // Auth gate: show app or auth stack
   return (
     <SafeAreaProvider>
       <NavigationContainer>

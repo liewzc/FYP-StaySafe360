@@ -3,24 +3,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY = 'bookmarks';
 
-/** 读取所有书签（数组） */
+// Read all bookmarks
 export async function getBookmarks() {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
   return raw ? JSON.parse(raw) : [];
 }
 
-/** 按 id 判断是否已收藏 */
+// Check whether a bookmark with the given id exists
 export async function isBookmarked(id) {
   const list = await getBookmarks();
   return list.some(b => b.id === id);
 }
 
-/** 添加或更新书签 */
+// Add a new bookmark or update an existing one (by id)
 export async function addBookmark(item) {
   if (!item?.id) return false;
   const list = await getBookmarks();
   const idx = list.findIndex(b => b.id === item.id);
   const now = Date.now();
+
+  // Normalize shape and fill defaults
   const normalized = {
     id: item.id,
     title: item.title || 'Untitled',
@@ -33,15 +35,17 @@ export async function addBookmark(item) {
     updatedAt: now,
   };
   if (idx >= 0) {
+    // Update existing
     list[idx] = { ...list[idx], ...normalized, updatedAt: now };
   } else {
-    list.unshift(normalized); // 新增放前面
+    // Insert new at the front
+    list.unshift(normalized); 
   }
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   return true;
 }
 
-/** 按 id 移除 */
+// Remove a bookmark by id
 export async function removeBookmark(id) {
   const list = await getBookmarks();
   const next = list.filter(b => b.id !== id);
@@ -49,7 +53,7 @@ export async function removeBookmark(id) {
   return next.length !== list.length;
 }
 
-/** 切换收藏状态；返回最新状态（true=已收藏） */
+// Toggle bookmark state for a given item
 export async function toggleBookmark(item) {
   const saved = await isBookmarked(item.id);
   if (saved) {

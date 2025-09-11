@@ -10,12 +10,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import LeafletMiniMap from '../components/LeafletMiniMap';
 
-// ===== Theme =====
+// Theme
 const PRIMARY = '#0b6fb8';
 const CARD_BG = '#ffffff';
 const TEXT_MUTED = '#6b7280';
 
-// ===== Assets =====
+// Assets
 import LogoIcon from '../assets/home/logo.png';
 import LocationPin from '../assets/home/location.png';
 
@@ -35,19 +35,19 @@ import RainyIcon from '../assets/weather/rainy.png';
 import StormIcon from '../assets/weather/storm.png';
 import SnowIcon from '../assets/weather/snow.png';
 
-// ===== Advertise images =====
+// Advertise images
 import Adv1 from '../assets/advertise/1.jpg';
 import Adv2 from '../assets/advertise/2.jpg';
 import Adv3 from '../assets/advertise/3.jpg';
 import Adv4 from '../assets/advertise/4.jpg';
 import Adv5 from '../assets/advertise/5.jpg';
 
-// ===== Quiz icons =====
+// Quiz icons
 import LocalIcon from '../assets/firstaidhub/localdisaster.png';
 import PrepIcon from '../assets/firstaidhub/disaster.png';
 import EverydayIcon from '../assets/firstaidhub/everyday.png';
 
-/** —— Simple weather icon pick —— */
+// Simple weather icon pick
 const pickIconByConditions = ({ temp, rain1h, wind }) => {
   const t = Number(temp);
   const r = Number(rain1h);
@@ -59,7 +59,7 @@ const pickIconByConditions = ({ temp, rain1h, wind }) => {
   return CloudyIcon;
 };
 
-/** —— Styles for metric chips —— */
+// Styles for metric chips
 function getPm25Style(pm) {
   const n = typeof pm === 'number' ? pm : Number(pm);
   if (Number.isNaN(n)) {
@@ -91,7 +91,7 @@ function getHumidityStyle(h) {
   return { bg: '#f7fbff', border: '#e6f1fb', text: PRIMARY, score: 0 };
 }
 
-/* ====================== Fullscreen gallery (no deps) ====================== */
+// Fullscreen gallery (no deps)
 function GalleryModal({ visible, images, initialIndex = 0, onClose }) {
   const { width, height } = Dimensions.get('window');
   const listRef = useRef(null);
@@ -135,7 +135,7 @@ function GalleryModal({ visible, images, initialIndex = 0, onClose }) {
   );
 }
 
-/** —— Ad Carousel —— */
+// Ad Carousel
 function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, borderRadius = 16 }) {
   const { width } = Dimensions.get('window');
   const [index, setIndex] = useState(0);
@@ -230,7 +230,7 @@ function AdvertCarousel({ images, onPressImage, autoMs = 4500, height = 170, bor
   );
 }
 
-/** —— Quiz Carousel —— */
+// Quiz Carousel
 function QuizCarousel({ items, onPressItem, height = 86 }) {
   const { width } = Dimensions.get('window');
   const ITEM_W = width * 0.82;
@@ -264,7 +264,7 @@ function QuizCarousel({ items, onPressItem, height = 86 }) {
   );
 }
 
-/** —— Knowledge Carousel —— */
+// Knowledge Carousel
 function KnowledgeCarousel({ items, onPressItem, height = 86 }) {
   const { width } = Dimensions.get('window');
   const ITEM_W = width * 0.86;
@@ -299,7 +299,7 @@ function KnowledgeCarousel({ items, onPressItem, height = 86 }) {
   );
 }
 
-/* —— Alert Card —— */
+// Alert Card
 function AlertCard({ kind = 'safe', title, lines = [] }) {
   const isDanger = kind === 'danger';
   const COLORS = isDanger
@@ -336,7 +336,7 @@ function AlertCard({ kind = 'safe', title, lines = [] }) {
   );
 }
 
-/** ===== Presentation-only Screen ===== */
+// Presentation-only Screen
 export default function HomeScreen({
   // data
   loading,

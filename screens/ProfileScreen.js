@@ -23,6 +23,12 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 const PLACEHOLDER_AVATAR = require("../assets/profile_image/profile.jpeg");
 
+/**
+ * Small toggle switch:
+ * - Controlled via `value`
+ * - Calls `onValueChange(next)` when pressed
+ * - Animated knob/track color, disabled state supported
+ */
 function ToggleSwitch({ value, onValueChange, disabled }) {
   const W = 52,
     H = 30,
@@ -85,6 +91,10 @@ function ToggleSwitch({ value, onValueChange, disabled }) {
   );
 }
 
+/**
+ * Settings row with left icon + label and a trailing ToggleSwitch.
+ * - `iconLib`: 'ion' (Ionicons) or 'mci' (MaterialCommunityIcons)
+ */
 function SettingRow({
   iconLib = "ion",
   iconName,
@@ -145,6 +155,7 @@ function AchievementCard({ title, progress = 0, icon }) {
   );
 }
 
+// Profile screen (presentational; all data/handlers are passed in via props)
 export default function ProfileScreen(props) {
   const {
     loading,
@@ -178,6 +189,7 @@ export default function ProfileScreen(props) {
 
   const insets = useSafeAreaInsets();
 
+  // Initial loading state for the screen
   if (loading) {
     return (
       <SafeAreaView

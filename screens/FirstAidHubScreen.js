@@ -3,16 +3,22 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
+/**
+ * First Aid Hub:
+ * Landing page with two entry points:
+ * 1) Disaster Preparedness (your existing disaster learning/quiz flow)
+ * 2) Everyday First Aid (your existing FirstAid screen)
+ */
 export default function FirstAidHubScreen() {
   const navigation = useNavigation();
 
   const goDisaster = () => {
-    // 进入你现有的灾害学习/测验流程（LevelSelectScreen）
+    // Navigate to your existing disaster learning/quiz flow（LevelSelectScreen）
     navigation.navigate('DisasterPreparedness');
   };
 
   const goEveryday = () => {
-    // 进入你原本的 FirstAidScreen（我们会把它挂在 Stack 里，名字叫 EverydayFirstAid）
+    // mounted in the stack as EverydayFirstAid
     navigation.navigate('EverydayFirstAid');
   };
 
@@ -21,8 +27,6 @@ export default function FirstAidHubScreen() {
       <Text style={styles.title}>First Aid Hub</Text>
 
       <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={goDisaster}>
-        {/* ⚠️ 替换为你实际的图片文件名 */}
-        {/* 例如：require('../../assets/firstaid_images/disaster.png') */}
         <Image
           source={require('../assets/firstaidhub/disaster.png')}
           style={styles.cardImg}
@@ -32,8 +36,6 @@ export default function FirstAidHubScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={goEveryday}>
-        {/* ⚠️ 替换为你实际的图片文件名 */}
-        {/* 例如：require('../../assets/firstaid_images/everyday.png') */}
         <Image
           source={require('../assets/firstaidhub/everyday.png')}
           style={styles.cardImg}
@@ -47,6 +49,7 @@ export default function FirstAidHubScreen() {
 
 const PRIMARY = '#0b6fb8';
 
+// Basic layout and card styles
 const styles = StyleSheet.create({
   container: {
     padding: 16,
