@@ -60,7 +60,7 @@ export default function QuizGameScreen() {
   const advancingRef = useRef(false);
   const lastLoggedIndexRef = useRef(-1);
 
-  // ✅ allow a single removal after user confirms exit
+  // allow a single removal after user confirms exit
   const allowExitRef = useRef(false);
 
   // ===== Exit target helper =====
