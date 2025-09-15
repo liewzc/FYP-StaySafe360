@@ -27,7 +27,7 @@ export default function ResultScreen({
   attemptsFirstAid = [],
 
   // actions
-  onOpenAttemptDetail,
+  onOpenAttemptDetail, // 仍保留（若后续要用其它入口），当前不使用
   onClearAll,
   onClearKind, // (kind: 'disaster' | 'firstaid')
 }) {
@@ -163,7 +163,6 @@ export default function ResultScreen({
                 time={formatDateTime(a.created_at)}
                 emoji={pickEmoji({ disaster: a.disasterType }, false)}
                 accent="#0ea5e9"
-                onPressDetails={() => onOpenAttemptDetail?.(a.id)}
               />
             ))
           )
@@ -180,7 +179,6 @@ export default function ResultScreen({
               time={formatDateTime(a.created_at)}
               emoji={pickEmoji({ disaster: a.disasterType }, true)}
               accent="#22c55e"
-              onPressDetails={() => onOpenAttemptDetail?.(a.id)}
             />
           ))
         )}
@@ -222,7 +220,6 @@ function Card({
   time,
   emoji,
   accent = PRIMARY,
-  onPressDetails,
 }) {
   const scoreNum = typeof score === "number" ? score : Number(score);
   const totalNum = typeof total === "number" ? total : NaN;
@@ -256,16 +253,7 @@ function Card({
       <View style={styles.divider} />
       <Row label="Sublevel" value={sublevel} />
       <Row label="Time" value={time} />
-
-      {onPressDetails && (
-        <TouchableOpacity
-          style={styles.btnView}
-          onPress={onPressDetails}
-          activeOpacity={0.9}
-        >
-          <Text style={styles.btnViewText}>🔎 View details</Text>
-        </TouchableOpacity>
-      )}
+      {/* 删除了“View details”按钮 */}
     </View>
   );
 }
@@ -451,18 +439,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     maxWidth: "65%",
   },
-
-  btnView: {
-    marginTop: 10,
-    alignSelf: "flex-start",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: PRIMARY,
-    backgroundColor: "#fff",
-  },
-  btnViewText: { color: PRIMARY, fontWeight: "800" },
 
   emptyBox: {
     backgroundColor: "#f3f4f6",
