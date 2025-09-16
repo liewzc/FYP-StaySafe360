@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     marginBottom: 4, textAlign: 'center',
   },
   subtitle: { fontSize: 12, color: '#6b7280', marginBottom: 20, textAlign: 'center' },
-  card: { backgroundColor: '#f7fbff', borderColor: '#e6f1fb', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 12 },
+  card: { backgroundColor: '#e8f5ff', borderColor: '#d9ecff', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 12 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', marginBottom: 4 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
   // badge styles removed

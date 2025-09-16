@@ -78,7 +78,6 @@ export default function EverydaySubLevelScreen() {
             <TouchableOpacity key={idx} style={styles.card} onPress={() => handlePress(sub)}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Sublevel {sub}</Text>
-                {/* 状态小色框已移除 */}
               </View>
               <Text style={styles.cardText}>
                 {isComplete ? 'You’ve completed this quiz.' : 'Tap to begin this sublevel quiz.'}
