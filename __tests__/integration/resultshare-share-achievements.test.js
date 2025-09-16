@@ -88,24 +88,6 @@ import { Share, AccessibilityInfo } from 'react-native';
 jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
 jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 
-// Supabase client（避免真实网络/SDK）
-jest.mock('../../supabaseClient', () => {
-  const auth = {
-    getUser: jest.fn(async () => ({ data: { user: { id: 'u_test' } }, error: null })),
-    getSession: jest.fn(async () => ({ data: { session: { user: { id: 'u_test' } } } })),
-    onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
-    signOut: jest.fn(),
-  };
-  const from = jest.fn(() => ({
-    insert: jest.fn(async () => ({ error: null })),
-    delete: jest.fn(async () => ({ error: null })),
-    select: jest.fn(() => ({
-      eq: () => ({ in: () => ({ order: () => ({ limit: () => ({ data: [], error: null }) }) }) }),
-    })),
-  }));
-  return { supabase: { auth, from } };
-});
-
 /* ---------- 正式导入 ---------- */
 import React from 'react';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react-native';
@@ -118,7 +100,6 @@ beforeAll(() => {
   jest.useFakeTimers();           // 使用现代 fake timers
 });
 afterEach(() => {
-  // 跑掉组件里尚未完成的定时器，避免 RN 的 setup 定时器在 teardown 后再触发
   jest.runOnlyPendingTimers();
 });
 afterAll(() => {
@@ -144,15 +125,12 @@ describe('Integration: ResultShareScreen share increments achievements share cou
 
     const shareBtn = await screen.findByText(/Share/i);
 
-    // 传入带 stopPropagation 的事件对象以适配 onPress={(e)=> e.stopPropagation?.()}
     fireEvent.press(shareBtn, { stopPropagation: jest.fn(), nativeEvent: {} });
 
-    // 触发任何基于 setTimeout/InteractionManager 的异步
     await act(async () => {
-      jest.runAllTimers(); // flush 所有计时器
+      jest.runAllTimers();
     });
 
-    // 等待 AsyncStorage 写入并断言
     await waitFor(async () => {
       expect(AsyncStorage.setItem).toHaveBeenCalled();
       const val = await AsyncStorage.getItem('progress.shares');

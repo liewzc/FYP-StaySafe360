@@ -14,26 +14,20 @@ beforeEach(() => {
 
 afterEach(() => {
   try {
-    // 把所有挂起的宏/微任务跑干净（此时仍在 fake timers 环境中）
     jest.runOnlyPendingTimers();
     jest.runAllTicks();
     jest.runAllTimers();
   } catch {}
   cleanup();
-
-  // 恢复到真实定时器，避免影响其他测试
   jest.clearAllTimers();
   jest.useRealTimers();
 });
 
-// ✅ 不再在 afterAll 里推进定时器（此时通常已是 real timers）
 afterAll(() => {
-  // 如无特殊需求，这里什么都不做最安全
-  // 如果你仍想保险地清一次，可以仅做“无副作用”的恢复：
   try { jest.clearAllTimers(); } catch {}
 });
 
-// ⚠️ 完全 stub 掉 Navigation（不要 requireActual，避免加载 ESM）
+// ⚠️ 完全 stub 掉 Navigation
 jest.mock('@react-navigation/native', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -54,7 +48,7 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
-// ✅ Safe Area 简单 stub
+// Safe Area
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -66,7 +60,7 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-//（可选）手势库轻量 stub
+// gesture
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -80,7 +74,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-//（可选）图标库轻量 stub
+// icons
 jest.mock(
   '@expo/vector-icons',
   () => {
@@ -94,60 +88,30 @@ jest.mock(
   { virtual: true }
 );
 
-// AsyncStorage 官方 mock
+// AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Haptics & Share 静默
+// Haptics & Share
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),
   selectionAsync: jest.fn(),
   ImpactFeedbackStyle: { Medium: 'Medium' },
 }));
-
-// 如果此内部路径在你的 RN 版本不存在，改用“备用写法”见下方注释
 jest.mock('react-native/Libraries/Share/Share', () => ({
   share: jest.fn(async () => ({ action: 'sharedAction' })),
 }));
 
-/* 备用写法（若上面路径报找不到模块，把上面那段替换为下面）
-jest.mock('react-native', () => {
-  const RN = jest.requireActual('react-native');
-  return {
-    ...RN,
-    Share: { share: jest.fn(async () => ({ action: 'sharedAction' })) },
-  };
-});
-*/
+// ✅ 删除 supabaseClient mock
 
-// Supabase 客户端 stub（按项目导出名）
-jest.mock('../../supabaseClient', () => {
-  const auth = {
-    getUser: jest.fn(async () => ({ data: { user: { id: 'u_test' } }, error: null })),
-    getSession: jest.fn(async () => ({ data: { session: { user: { id: 'u_test' } } } })),
-    onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
-    signOut: jest.fn(),
-  };
-  const from = jest.fn(() => ({
-    insert: jest.fn(async () => ({ error: null })),
-    delete: jest.fn(async () => ({ error: null })),
-    select: jest.fn(() => ({
-      eq: () => ({ in: () => ({ order: () => ({ limit: () => ({ data: [], error: null }) }) }) }),
-    })),
-  }));
-  return { supabase: { auth, from } };
-});
-
-// 引入待测组件与进度计算函数
+// 待测组件与工具
 import ResultShareScreen from '../../screens/quiz/ResultShareScreen';
 import { computeAchievementProgressMap } from '../../utils/achievements';
 
-// 从 mock 里拿 SafeAreaProvider
 const { SafeAreaProvider } = require('react-native-safe-area-context');
 
-// 简化渲染器（NavigationContainer 已被 View stub）
 const renderWithProviders = (ui) =>
   render(<SafeAreaProvider>{ui}</SafeAreaProvider>);
 
@@ -160,7 +124,6 @@ describe('Integration: Perfect result updates Disaster achievements map', () => 
   test('after perfect, dz_sub_10 is 10 and dz_cat_1 is 100', async () => {
     renderWithProviders(<ResultShareScreen />);
 
-    // 推进时间，确保组件里若有 setTimeout/raf 能执行
     jest.advanceTimersByTime(2000);
 
     await waitFor(
@@ -173,7 +136,6 @@ describe('Integration: Perfect result updates Disaster achievements map', () => 
       { timeout: 4000 }
     );
 
-    // 结束前再确保没有挂起定时器（仍在 fake timers 环境中）
     jest.runOnlyPendingTimers();
   });
 });

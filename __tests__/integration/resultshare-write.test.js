@@ -106,24 +106,6 @@ jest.mock('expo-haptics', () => ({
 jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
 jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 
-/* ---------------- Supabase client 最小 mock ---------------- */
-jest.mock('../../supabaseClient', () => {
-  const auth = {
-    getUser: jest.fn(async () => ({ data: { user: { id: 'u_test' } }, error: null })),
-    getSession: jest.fn(async () => ({ data: { session: { user: { id: 'u_test' } } } })),
-    onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
-    signOut: jest.fn(),
-  };
-  const from = jest.fn(() => ({
-    insert: jest.fn(async () => ({ error: null })),
-    delete: jest.fn(async () => ({ error: null })),
-    select: jest.fn(() => ({
-      eq: () => ({ in: () => ({ order: () => ({ limit: () => ({ data: [], error: null }) }) }) }),
-    })),
-  }));
-  return { supabase: { auth, from } };
-});
-
 /* ---------------- 被测组件及 Provider from mocks（避免顶层 import 触发 ESM） ---------------- */
 import ResultShareScreen from '../../screens/quiz/ResultShareScreen';
 const { SafeAreaProvider } = require('react-native-safe-area-context');
@@ -149,19 +131,22 @@ describe('Integration: ResultShareScreen writes attempt + index', () => {
     // 若组件内部有延迟写入，推进时间以触发
     jest.advanceTimersByTime(3000);
 
-    await waitFor(async () => {
-      const idxRaw = await AsyncStorage.getItem('attemptIndex');
-      expect(idxRaw).toBeTruthy();
-      const idx = JSON.parse(idxRaw);
-      expect(Array.isArray(idx)).toBe(true);
-      expect(idx.length).toBeGreaterThan(0);
+    await waitFor(
+      async () => {
+        const idxRaw = await AsyncStorage.getItem('attemptIndex');
+        expect(idxRaw).toBeTruthy();
+        const idx = JSON.parse(idxRaw);
+        expect(Array.isArray(idx)).toBe(true);
+        expect(idx.length).toBeGreaterThan(0);
 
-      const attemptId = idx[0]?.id;
-      expect(attemptId).toBeTruthy();
+        const attemptId = idx[0]?.id;
+        expect(attemptId).toBeTruthy();
 
-      const detailRaw = await AsyncStorage.getItem(`attempt:${attemptId}`);
-      expect(detailRaw).toBeTruthy();
-    }, { timeout: 4000 });
+        const detailRaw = await AsyncStorage.getItem(`attempt:${attemptId}`);
+        expect(detailRaw).toBeTruthy();
+      },
+      { timeout: 4000 }
+    );
 
     jest.runOnlyPendingTimers();
   });

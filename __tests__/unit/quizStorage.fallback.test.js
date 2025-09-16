@@ -1,24 +1,8 @@
+// __tests__/unit/quizStorage.fallback.test.js
+
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
-
-jest.mock('../../supabaseClient', () => {
-  const auth = {
-    getUser: jest.fn(async () => {
-
-      throw new Error('Not authenticated');
-    }),
-    getSession: jest.fn(async () => ({ data: { session: null } })),
-  };
-  const from = jest.fn(() => ({
-    insert: jest.fn(async () => ({ error: new Error('offline') })),
-    delete: jest.fn(async () => ({ error: new Error('offline') })),
-    select: jest.fn(() => ({
-      eq: () => ({ in: () => ({ order: () => ({ limit: () => ({ data: [], error: new Error('offline') }) }) }) })
-    }))
-  }));
-  return { supabase: { auth, from } };
-});
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
@@ -74,7 +58,6 @@ describe('quizStorage fallback', () => {
   });
 
   test('clearHistory clears local fallback buckets for kind group', async () => {
-
     await logFirstAidResult({
       categoryTitle: 'A',
       level: null,
