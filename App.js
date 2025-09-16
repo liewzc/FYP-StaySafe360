@@ -1,10 +1,10 @@
 // App.js
-
-// App entry point: sets up navigation (tabs + stacks), auth gating via Supabase,
+// App entry point: sets up navigation (tabs + stacks), no auth gating,
 // daily streak tick on launch, and push notification behavior.
+
 import "react-native-gesture-handler";
-import React, { useEffect, useState, useMemo } from "react";
-import { Image, ActivityIndicator, View, Platform } from "react-native";
+import React, { useEffect, useMemo } from "react";
+import { Image, Platform } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -12,7 +12,6 @@ import {
   SafeAreaProvider,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { supabase } from "./supabaseClient";
 import { touchDailyStreak } from "./utils/achievements";
 
 // Notifications: Expo Notifications
@@ -30,7 +29,6 @@ import ProfileContainer from "./logic/ProfileContainer";
 import QuizGameScreen from "./screens/quiz/QuizGameScreen";
 import SubLevelScreen from "./screens/quiz/SubLevelScreen";
 import QuizScreen from "./screens/quiz/QuizScreen";
-
 import ResultShareScreen from "./screens/quiz/ResultShareScreen";
 
 // Disaster preparedness flow
@@ -62,15 +60,9 @@ import WeatherMapContainer from "./logic/WeatherMapContainer";
 import SOSContainer from "./logic/SOSContainer";
 import ChatbotScreen from "./screens/ChatbotScreen";
 
-// Auth screens
-import LoginScreen from "./auth/LoginScreen";
-import RegisterScreen from "./auth/RegisterScreen";
-import ForgotPassword from "./auth/ForgotPasswordScreen";
-
 // Root navigators
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
-const Auth = createNativeStackNavigator();
 
 // Bottom tab icons (static images)
 const TAB_ICONS = {
@@ -133,7 +125,7 @@ function MainTabsWithInsets() {
       })}
       initialRouteName="Home"
     >
-      <Stack.Screen name="Quiz" component={CombinedQuizHubContainer} />
+      <Tab.Screen name="Quiz" component={CombinedQuizHubContainer} />
       <Tab.Screen name="Knowledge" component={KnowledgeScreen} />
       <Tab.Screen name="Home" component={HomeContainer} />
       <Tab.Screen name="Result" component={ResultContainer} />
@@ -142,7 +134,7 @@ function MainTabsWithInsets() {
   );
 }
 
-// App stack (all screens reachable after auth)
+// App stack (all screens)
 function AppStackWithInsets() {
   const insets = useSafeAreaInsets();
   return (
@@ -175,40 +167,28 @@ function AppStackWithInsets() {
       <Stack.Screen name="Bookmarks" component={BookmarksScreen} />
       <Stack.Screen name="CPRTrainingScreen" component={CPRTrainingScreen} />
 
+      {/* Disaster selection shortcut */}
       <Stack.Screen name="DisasterSelect" component={QuizScreen} />
 
       {/* Disaster Preparedness */}
-      <Stack.Screen
-        name="DisasterPreparedness"
-        component={DisasterPreparedness}
-      />
-      <Stack.Screen
-        name="DisasterSubLevel"
-        component={DisasterSubLevelContainer}
-      />
+      <Stack.Screen name="DisasterPreparedness" component={DisasterPreparedness} />
+      <Stack.Screen name="DisasterSubLevel" component={DisasterSubLevelContainer} />
       <Stack.Screen name="DisasterQuiz" component={DisasterQuiz} />
 
-      {/* quiz */}
+      {/* Quiz flow */}
       <Stack.Screen name="SubLevel" component={SubLevelScreen} />
       <Stack.Screen name="QuizGame" component={QuizGameScreen} />
       <Stack.Screen name="ResultShare" component={ResultShareScreen} />
       <Stack.Screen name="FirstAidResult" component={FirstAidResultScreen} />
 
       {/* Everyday First Aid flows */}
-      <Stack.Screen
-        name="EverydayFirstAid"
-        component={EverydayFirstAidContainer}
-      />
-      <Stack.Screen
-        name="EverydaySubLevel"
-        component={EverydaySubLevelScreen}
-      />
+      <Stack.Screen name="EverydayFirstAid" component={EverydayFirstAidContainer} />
+      <Stack.Screen name="EverydaySubLevel" component={EverydaySubLevelScreen} />
       <Stack.Screen name="EverydayQuiz" component={EverydayQuizScreen} />
 
       {/* Utilities */}
       <Stack.Screen name="AchievementGallery" component={AchievementGallery} />
       <Stack.Screen name="Checklist" component={ChecklistContainer} />
-
 
       {/* Chatbot */}
       <Stack.Screen
@@ -237,34 +217,8 @@ function AppStackWithInsets() {
   );
 }
 
-// Auth stack (shown when no Supabase session)
-function AuthStackWithInsets() {
-  const insets = useSafeAreaInsets();
-  return (
-    <Auth.Navigator
-      initialRouteName="Login"
-      screenOptions={{
-        headerShown: false,
-        contentStyle: {
-          paddingBottom: insets.bottom,
-          paddingLeft: insets.left,
-          paddingRight: insets.right,
-        },
-      }}
-    >
-      <Auth.Screen name="Login" component={LoginScreen} />
-      <Auth.Screen name="Register" component={RegisterScreen} />
-      <Auth.Screen name="ForgotPassword" component={ForgotPassword} />
-    </Auth.Navigator>
-  );
-}
-
 export default function App() {
-  // Auth/session bootstrapping
-  const [initializing, setInitializing] = useState(true);
-  const [session, setSession] = useState(null);
-
-  // Notification channel
+  // Android notification channel
   useEffect(() => {
     if (Platform.OS === "android") {
       Notifications.setNotificationChannelAsync("alerts", {
@@ -273,56 +227,20 @@ export default function App() {
         sound: "default",
         vibrationPattern: [0, 250, 250, 250],
         enableVibrate: true,
-        lockscreenVisibility:
-          Notifications.AndroidNotificationVisibility.PUBLIC,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
       }).catch(() => {});
     }
   }, []);
 
-  // Daily streak tick on app start
+  // Daily streak tick on app start (optional: keep or move to a “Check-in” button)
   useEffect(() => {
     touchDailyStreak().catch(() => {});
   }, []);
 
-  // Supabase session listener + initial fetch
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!mounted) return;
-      setSession(data.session ?? null);
-      setInitializing(false);
-    });
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (_event, _session) => {
-        setSession(_session ?? null);
-      }
-    );
-    return () => {
-      mounted = false;
-      // Handle both subscription signatures for safety
-      sub?.subscription?.unsubscribe?.();
-      sub?.unsubscribe?.();
-    };
-  }, []);
-
-  // Initial splash/loading while session is checked
-  if (initializing) {
-    return (
-      <SafeAreaProvider>
-        <View
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <ActivityIndicator size="large" />
-        </View>
-      </SafeAreaProvider>
-    );
-  }
-
-  // Auth gate: show app or auth stack
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        {session ? <AppStackWithInsets /> : <AuthStackWithInsets />}
+        <AppStackWithInsets />
       </NavigationContainer>
     </SafeAreaProvider>
   );

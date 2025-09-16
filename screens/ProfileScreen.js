@@ -6,34 +6,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
-  Alert,
   ActivityIndicator,
-  TextInput,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Animated,
   Pressable,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-const PLACEHOLDER_AVATAR = require("../assets/profile_image/profile.jpeg");
-
-/**
- * Small toggle switch:
- * - Controlled via `value`
- * - Calls `onValueChange(next)` when pressed
- * - Animated knob/track color, disabled state supported
- */
+/** Small toggle switch */
 function ToggleSwitch({ value, onValueChange, disabled }) {
-  const W = 52,
-    H = 30,
-    P = 3,
-    R = 999;
+  const W = 52, H = 30, P = 3, R = 999;
   const OFF_OFFSET = -1;
   const ON_OFFSET = -4;
 
@@ -91,10 +76,7 @@ function ToggleSwitch({ value, onValueChange, disabled }) {
   );
 }
 
-/**
- * Settings row with left icon + label and a trailing ToggleSwitch.
- * - `iconLib`: 'ion' (Ionicons) or 'mci' (MaterialCommunityIcons)
- */
+/** Settings row */
 function SettingRow({
   iconLib = "ion",
   iconName,
@@ -105,7 +87,6 @@ function SettingRow({
   disabled,
 }) {
   const Icon = iconLib === "mci" ? MaterialCommunityIcons : Ionicons;
-
   return (
     <View style={styles.settingItem}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -120,33 +101,25 @@ function SettingRow({
         )}
         <Text style={styles.settingLabel}>{label}</Text>
       </View>
-      <ToggleSwitch
-        value={value}
-        onValueChange={onChange}
-        disabled={disabled}
-      />
+      <ToggleSwitch value={value} onValueChange={onChange} disabled={disabled} />
     </View>
   );
 }
 
-/* Small component: Achievement Card */
+/** Achievement card */
 function AchievementCard({ title, progress = 0, icon }) {
   const pct = Math.max(0, Math.min(100, Math.round(progress)));
   const renderIcon = () => {
     if (!icon) return null;
-    if (icon.lib === "mci")
-      return (
-        <MaterialCommunityIcons name={icon.name} size={22} color="#0f172a" />
-      );
+    if (icon.lib === "mci") {
+      return <MaterialCommunityIcons name={icon.name} size={22} color="#0f172a" />;
+    }
     return <Ionicons name={icon.name} size={22} color="#0f172a" />;
   };
-
   return (
     <TouchableOpacity activeOpacity={0.9} style={achStyles.card}>
       <View style={achStyles.iconCircle}>{renderIcon()}</View>
-      <Text style={achStyles.title} numberOfLines={1}>
-        {title}
-      </Text>
+      <Text style={achStyles.title} numberOfLines={1}>{title}</Text>
       <View style={achStyles.progressBar}>
         <View style={[achStyles.progressFill, { width: `${pct}%` }]} />
       </View>
@@ -155,49 +128,32 @@ function AchievementCard({ title, progress = 0, icon }) {
   );
 }
 
-// Profile screen (presentational; all data/handlers are passed in via props)
+/** Profile (presentational) */
 export default function ProfileScreen(props) {
   const {
     loading,
-    uploading,
-    saving,
-    email,
-    username,
-    avatarUrl,
-    editingUsername,
-    draftUsername,
+    // achievements
+    featuredAchievements,
+    achLoading,
+    onOpenAchievementGallery,
+    // settings
     notificationsEnabled,
     soundEnabled,
     vibrationEnabled,
     mockDisasterActive,
-    featuredAchievements,
-    achLoading,
-
-    // actions
-    onAskPickAvatar,
-    onEditStart,
-    onEditCancel,
-    onChangeDraftUsername,
-    onSaveUsername,
     onToggleNotifications,
     onToggleSound,
     onToggleVibration,
     onToggleMockDisaster,
-    onLogout,
-    onOpenAchievementGallery,
   } = props;
 
   const insets = useSafeAreaInsets();
 
-  // Initial loading state for the screen
   if (loading) {
     return (
       <SafeAreaView
         edges={["bottom", "left", "right"]}
-        style={[
-          styles.container,
-          { alignItems: "center", justifyContent: "center" },
-        ]}
+        style={[styles.container, { alignItems: "center", justifyContent: "center" }]}
       >
         <ActivityIndicator size="large" />
       </SafeAreaView>
@@ -217,67 +173,6 @@ export default function ProfileScreen(props) {
             paddingTop: insets.top + 8,
           }}
         >
-          {/* Header: Avatar + Email/Username */}
-          <View style={styles.profileHeader}>
-            <TouchableOpacity activeOpacity={0.8} onPress={onAskPickAvatar}>
-              <View>
-                <Image
-                  source={avatarUrl ? { uri: avatarUrl } : PLACEHOLDER_AVATAR}
-                  style={styles.avatar}
-                />
-                <View style={styles.changeBadge}>
-                  <Text style={styles.changeBadgeText}>
-                    {uploading ? "..." : "Edit"}
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            <View style={styles.userInfo}>
-              <Text style={styles.email} numberOfLines={1}>
-                {email}
-              </Text>
-
-              {!editingUsername ? (
-                <View style={{ flexDirection: "row", alignItems: "center" }}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {username || "Anonymous"}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={onEditStart}
-                    style={styles.editBtn}
-                  >
-                    <Text style={styles.editBtnText}>Edit</Text>
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.editRow}>
-                  <TextInput
-                    value={draftUsername}
-                    onChangeText={onChangeDraftUsername}
-                    placeholder="Enter username"
-                    style={styles.input}
-                  />
-                  <TouchableOpacity
-                    onPress={onSaveUsername}
-                    disabled={saving}
-                    style={[styles.saveBtn, saving && { opacity: 0.6 }]}
-                  >
-                    <Text style={styles.saveBtnText}>
-                      {saving ? "Saving..." : "Save"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={onEditCancel}
-                    style={styles.cancelBtn}
-                  >
-                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-
           {/* Achievements */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -339,93 +234,17 @@ export default function ProfileScreen(props) {
               value={mockDisasterActive}
               onChange={onToggleMockDisaster}
             />
-
-            <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
-              <Text style={styles.logoutText}>Logout</Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {uploading && (
-        <View style={styles.uploadOverlay}>
-          <ActivityIndicator size="large" />
-        </View>
-      )}
     </SafeAreaView>
   );
 }
 
-const AVATAR_SIZE = 72;
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#fff" },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 18,
-  },
-  avatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    backgroundColor: "#eee",
-  },
-  changeBadge: {
-    position: "absolute",
-    bottom: -2,
-    right: -6,
-    backgroundColor: "#6C63FF",
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-  },
-  changeBadgeText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  userInfo: { flex: 1, marginLeft: 16 },
-  name: { fontSize: 18, fontWeight: "bold", color: "#111", maxWidth: "75%" },
-  email: { fontSize: 14, color: "#666", marginBottom: 6 },
-  editBtn: {
-    marginLeft: 10,
-    backgroundColor: "#eef2ff",
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-  },
-  editBtnText: { color: "#3b82f6", fontWeight: "600" },
 
-  editRow: { flexDirection: "row", alignItems: "center" },
-  input: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 16,
-    marginRight: 8,
-  },
-  saveBtn: {
-    backgroundColor: "#3b82f6",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  saveBtnText: { color: "#fff", fontWeight: "700" },
-  cancelBtn: {
-    backgroundColor: "#e5e7eb",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginLeft: 6,
-  },
-  cancelBtnText: { color: "#111", fontWeight: "600" },
-
-  section: {
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
-    paddingTop: 14,
-  },
+  section: { marginTop: 16, borderTopWidth: 1, borderTopColor: "#eee", paddingTop: 14 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -444,22 +263,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   settingLabel: { fontSize: 16, color: "#333" },
-
-  logoutButton: {
-    marginTop: 8,
-    backgroundColor: "#f44336",
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  logoutText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-
-  uploadOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.15)",
-  },
 });
 
 const achStyles = StyleSheet.create({

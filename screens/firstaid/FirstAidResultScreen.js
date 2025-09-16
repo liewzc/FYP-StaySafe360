@@ -8,23 +8,40 @@ import {
   Share,
   Animated,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import TopBarBack from "../../components/ui/TopBarBack";
+
+// Local-only achievements/history
+import {
+  recordLocalAttempt,
+  markEverydaySublevelComplete,
+  logShareOnce,
+} from "../../utils/achievements";
+
+// Normalize a human title into a key used by the achievements module.
+function normalizeToKey(title = "") {
+  return String(title)
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "") 
+    .trim()
+    .replace(/\s+/g, "_"); 
+}
 
 export default function FirstAidResultScreen() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // These are provided by EverydayQuizScreen when navigating here
+  // EverydayQuizScreen 
   const {
-    score = 0, // e.g. 80 (already *20 per question)
-    total = 100, // e.g. 100
-    category = "First Aid", // e.g. '🔥 Burns'
-    level = "main", // e.g. 'main'
-    sublevel = "Ⅰ", // e.g. 'Ⅰ'
-    timeSpentMs = 0, // total time spent in ms
-    answers = [], // per-question array from the quiz screen
+    score = 0,           // e.g. 80
+    total = 100,         // e.g. 100
+    category = "First Aid",
+    level = "main",
+    sublevel = "Ⅰ",
+    timeSpentMs = 0,
+    answers = [],
   } = route.params || {};
 
   const pct = Math.max(0, Math.min(100, Math.round((score / total) * 100)));
@@ -38,14 +55,8 @@ export default function FirstAidResultScreen() {
   const animVal = useRef(new Animated.Value(0)).current;
   const [displayScore, setDisplayScore] = useState(0);
   useEffect(() => {
-    Animated.timing(animVal, {
-      toValue: score,
-      duration: 900,
-      useNativeDriver: false,
-    }).start();
-    const id = animVal.addListener(({ value }) =>
-      setDisplayScore(Math.round(value))
-    );
+    Animated.timing(animVal, { toValue: score, duration: 900, useNativeDriver: false }).start();
+    const id = animVal.addListener(({ value }) => setDisplayScore(Math.round(value)));
     return () => animVal.removeListener(id);
   }, [score, animVal]);
 
@@ -59,15 +70,44 @@ export default function FirstAidResultScreen() {
 
   const [showReview, setShowReview] = useState(false);
 
+  // One-time persistence: record attempt, and if perfect, mark the sublevel complete
+  const didPersistRef = useRef(false);
+  useEffect(() => {
+    if (didPersistRef.current) return;
+    didPersistRef.current = true;
+
+    // 1) Save an attempt locally
+    recordLocalAttempt({
+      domain: "firstaid",
+      categoryId: category,
+      sublevelId: sublevel,
+      score,
+      total,
+      timeMs: timeSpentMs || 0,
+    }).catch((e) => console.warn("recordLocalAttempt error:", e));
+
+    // 2) If perfect score, mark this sublevel as completed for achievements
+    if (isPerfect) {
+      const key = normalizeToKey(category);
+      markEverydaySublevelComplete(key, sublevel).catch((e) =>
+        console.warn("markEverydaySublevelComplete error:", e)
+      );
+    }
+  }, [category, sublevel, score, total, timeSpentMs, isPerfect]);
+
   const handleShare = async () => {
     try {
       const message = `💊 I scored ${score} / ${total} (${pct}%) in the ${category} — ${level} ${sublevel} first-aid quiz! #StaySafe360`;
-      await Share.share(
+      const result = await Share.share(
         { message, title: "My StaySafe360 Quiz Score" },
         { dialogTitle: "Share your score" }
       );
+      if (result?.action) {
+        await logShareOnce().catch(() => {});
+      }
     } catch (err) {
       console.error("Share error:", err);
+      Alert.alert("Share failed", "Please try again.");
     }
   };
 
@@ -81,32 +121,18 @@ export default function FirstAidResultScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={[
-          styles.container,
-          { backgroundColor: accentSoft },
-        ]}
+        contentContainerStyle={[styles.container, { backgroundColor: accentSoft }]}
       >
         <View style={styles.card} accessibilityRole="summary">
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: accentSoft, borderColor: accent },
-            ]}
-          >
+          <View style={[styles.badge, { backgroundColor: accentSoft, borderColor: accent }]}>
             <Text style={[styles.badgeText, { color: accent }]}>
-              {isPerfect
-                ? "🏆 Perfect!"
-                : isGood
-                ? "👍 Well done"
-                : "💪 Keep going"}
+              {isPerfect ? "🏆 Perfect!" : isGood ? "👍 Well done" : "💪 Keep going"}
             </Text>
           </View>
 
-          <View style={styles.chipsRow}>
+          <View className="chips-row" style={styles.chipsRow}>
             <View style={[styles.chip, { borderColor: accent }]}>
-              <Text style={[styles.chipText, { color: accent }]}>
-                {category}
-              </Text>
+              <Text style={[styles.chipText, { color: accent }]}>{category}</Text>
             </View>
             <View style={[styles.chip, { borderColor: "#CBD5E1" }]}>
               <Text style={[styles.chipText, { color: "#334155" }]}>
@@ -114,9 +140,7 @@ export default function FirstAidResultScreen() {
               </Text>
             </View>
             <View style={[styles.chip, { borderColor: "#CBD5E1" }]}>
-              <Text style={[styles.chipText, { color: "#334155" }]}>
-                Time: {timeText}
-              </Text>
+              <Text style={[styles.chipText, { color: "#334155" }]}>Time: {timeText}</Text>
             </View>
           </View>
 
@@ -133,18 +157,13 @@ export default function FirstAidResultScreen() {
             accessibilityValue={{ now: pct, min: 0, max: 100 }}
           >
             <View
-              style={[
-                styles.progressBarFill,
-                { width: `${pct}%`, backgroundColor: accent },
-              ]}
+              style={[styles.progressBarFill, { width: `${pct}%`, backgroundColor: accent }]}
             />
           </View>
           <Text style={styles.pctText}>{pct}%</Text>
 
           <Text style={styles.subtitle}>
-            {isPerfect
-              ? "✅ All correct! Outstanding work!"
-              : "📝 Try again to aim for a perfect score!"}
+            {isPerfect ? "✅ All correct! Outstanding work!" : "📝 Try again to aim for a perfect score!"}
           </Text>
 
           {/* Actions */}
@@ -171,51 +190,37 @@ export default function FirstAidResultScreen() {
               style={[styles.secondaryBtn, { borderColor: accent }]}
               onPress={() => navigation.navigate("Main", { screen: "Quiz" })}
             >
-              <Text style={[styles.secondaryBtnText, { color: accent }]}>
-                🏠 Back to Quiz Menu
-              </Text>
+              <Text style={[styles.secondaryBtnText, { color: accent }]}>🏠 Back to Quiz Menu</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Inline review (no extra screens needed) */}
+          {/* Inline review */}
           {showReview && (
             <View style={styles.reviewBlock}>
               <Text style={styles.reviewTitle}>Answer Review</Text>
               {answers?.length ? (
                 answers.map((a, idx) => {
                   const letter =
-                    a?.selectedIndex != null
-                      ? String.fromCharCode(65 + a.selectedIndex)
-                      : "—";
+                    a?.selectedIndex != null ? String.fromCharCode(65 + a.selectedIndex) : "—";
                   const picked = a?.selectedAnswer ?? "No answer";
                   const correct = a?.correctAnswer;
                   const ok = a?.isCorrect ?? picked === correct;
-                  const spent =
-                    a?.timeSpentSec != null ? `${a.timeSpentSec}s` : "";
+                  const spent = a?.timeSpentSec != null ? `${a.timeSpentSec}s` : "";
                   return (
-                    <View
-                      key={`${idx}-${a?.question?.slice(0, 6)}`}
-                      style={styles.qItem}
-                    >
+                    <View key={`${idx}-${a?.question?.slice(0, 6)}`} style={styles.qItem}>
                       <Text style={styles.qTitle}>
                         {idx + 1}. {a?.question}
                       </Text>
-                      <Text
-                        style={[styles.qLine, ok ? styles.ok : styles.notOk]}
-                      >
+                      <Text style={[styles.qLine, ok ? styles.ok : styles.notOk]}>
                         Your answer: {letter}. {picked}
                       </Text>
                       <Text style={styles.qLine}>Correct: {correct}</Text>
-                      {!!spent && (
-                        <Text style={styles.qLine}>Time: {spent}</Text>
-                      )}
+                      {!!spent && <Text style={styles.qLine}>Time: {spent}</Text>}
                     </View>
                   );
                 })
               ) : (
-                <Text style={{ color: "#6b7280" }}>
-                  No per-question details were provided.
-                </Text>
+                <Text style={{ color: "#6b7280" }}>No per-question details were provided.</Text>
               )}
             </View>
           )}
@@ -248,18 +253,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   badgeText: { fontSize: 13, fontWeight: "800" },
-  chipsRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-    flexWrap: "wrap",
-  },
-  chip: {
-    borderWidth: 1.5,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
+  chipsRow: { flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" },
+  chip: { borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 6 },
   chipText: { fontSize: 12, fontWeight: "700" },
   score: {
     fontSize: 32,
@@ -279,58 +274,18 @@ const styles = StyleSheet.create({
   },
   progressBarFill: { height: "100%", borderRadius: 999 },
   pctText: { fontSize: 12, color: "#6B7280", textAlign: "right", marginTop: 6 },
-  subtitle: {
-    fontSize: 14,
-    color: "#475569",
-    textAlign: "center",
-    marginVertical: 16,
-  },
+  subtitle: { fontSize: 14, color: "#475569", textAlign: "center", marginVertical: 16 },
 
-  actionsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
-    justifyContent: "center",
-  },
-  primaryBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-  },
+  actionsRow: { flexDirection: "row", gap: 10, marginTop: 10, justifyContent: "center" },
+  primaryBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center" },
   primaryBtnText: { color: "#fff", fontWeight: "800", fontSize: 14 },
-  secondaryBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: "center",
-    borderWidth: 1.5,
-  },
+  secondaryBtn: { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: "center", borderWidth: 1.5 },
   secondaryBtnText: { fontWeight: "800", fontSize: 14 },
 
-  reviewBlock: {
-    marginTop: 18,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    paddingTop: 14,
-  },
-  reviewTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  qItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
-  },
-  qTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 6,
-  },
+  reviewBlock: { marginTop: 18, borderTopWidth: 1, borderTopColor: "#E5E7EB", paddingTop: 14 },
+  reviewTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a", marginBottom: 8 },
+  qItem: { paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#F1F5F9" },
+  qTitle: { fontSize: 14, fontWeight: "700", color: "#111827", marginBottom: 6 },
   qLine: { fontSize: 13, color: "#374151", marginBottom: 2 },
   ok: { color: "#15803D" },
   notOk: { color: "#B91C1C" },

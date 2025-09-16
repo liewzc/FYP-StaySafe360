@@ -78,9 +78,7 @@ export default function EverydaySubLevelScreen() {
             <TouchableOpacity key={idx} style={styles.card} onPress={() => handlePress(sub)}>
               <View style={styles.cardHeader}>
                 <Text style={styles.cardTitle}>Sublevel {sub}</Text>
-                <View style={[styles.statusPill, { backgroundColor: isComplete ? '#4caf50' : '#f44336' }]}>
-                  <Text style={styles.statusText}>{isComplete ? 'Complete' : 'Incomplete'}</Text>
-                </View>
+                {/* 状态小色框已移除 */}
               </View>
               <Text style={styles.cardText}>
                 {isComplete ? 'You’ve completed this quiz.' : 'Tap to begin this sublevel quiz.'}
@@ -107,10 +105,9 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 12, color: '#6b7280', fontWeight: '700', textTransform: 'uppercase', marginBottom: 4, textAlign: 'center' },
   title: { fontSize: 22, fontWeight: '800', marginBottom: 4, color: '#0b6fb8', textAlign: 'center' },
   subtitle: { fontSize: 12, color: '#6b7280', marginBottom: 16, textAlign: 'center' },
+
   card: { backgroundColor: '#e8f5ff', borderRadius: 12, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#d9ecff' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cardTitle: { fontSize: 16, fontWeight: '700', color: '#0f172a' },
-  statusPill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  statusText: { color: '#fff', fontSize: 12, fontWeight: '700' },
   cardText: { marginTop: 8, fontSize: 13, color: '#374151' },
 });

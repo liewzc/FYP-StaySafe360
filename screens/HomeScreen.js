@@ -7,6 +7,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { touchDailyStreak } from '../utils/achievements';
 
 import LeafletMiniMap from '../components/LeafletMiniMap';
 
@@ -46,6 +48,11 @@ import Adv5 from '../assets/advertise/5.jpg';
 import LocalIcon from '../assets/firstaidhub/localdisaster.png';
 import PrepIcon from '../assets/firstaidhub/disaster.png';
 import EverydayIcon from '../assets/firstaidhub/everyday.png';
+
+// Streak keys (match utils/achievements.js)
+const STREAK_LAST_KEY = 'streak.lastActive';
+const STREAK_COUNT_KEY = 'streak.count';
+const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // Simple weather icon pick
 const pickIconByConditions = ({ temp, rain1h, wind }) => {
@@ -371,6 +378,40 @@ export default function HomeScreen({
   const [galleryIndex, setGalleryIndex] = useState(0);
   const advertImages = useMemo(() => [Adv1, Adv2, Adv3, Adv4, Adv5], []);
 
+  // Daily check-in state
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
+  const [streakCount, setStreakCount] = useState(0);
+  const [checkingIn, setCheckingIn] = useState(false);
+
+  // Load streak from storage to reflect current state
+  useEffect(() => {
+    (async () => {
+      try {
+        const [last, cnt] = await Promise.all([
+          AsyncStorage.getItem(STREAK_LAST_KEY),
+          AsyncStorage.getItem(STREAK_COUNT_KEY),
+        ]);
+        setHasCheckedInToday((last || '') === todayStr());
+        setStreakCount(cnt ? Number(cnt) : 0);
+      } catch {}
+    })();
+  }, []);
+
+  const handleCheckIn = async () => {
+    if (hasCheckedInToday || checkingIn) return;
+    setCheckingIn(true);
+    try {
+      await touchDailyStreak();
+      const [last, cnt] = await Promise.all([
+        AsyncStorage.getItem(STREAK_LAST_KEY),
+        AsyncStorage.getItem(STREAK_COUNT_KEY),
+      ]);
+      setHasCheckedInToday((last || '') === todayStr());
+      setStreakCount(cnt ? Number(cnt) : 0);
+    } catch {}
+    setCheckingIn(false);
+  };
+
   const openGalleryAt = (idx) => {
     setGalleryIndex(idx);
     setShowGallery(true);
@@ -517,6 +558,36 @@ export default function HomeScreen({
           </TouchableOpacity>
         </View>
 
+        {/* Daily Check-in */}
+        <View style={{ marginBottom: 12 }}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={handleCheckIn}
+            disabled={hasCheckedInToday || checkingIn}
+            style={[
+              styles.checkinBtn,
+              (hasCheckedInToday || checkingIn) && styles.checkinBtnDisabled,
+            ]}
+          >
+            <Ionicons
+              name={hasCheckedInToday ? 'checkmark-circle' : 'calendar'}
+              size={18}
+              color="#fff"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.checkinBtnText}>
+              {checkingIn
+                ? 'Checking in...'
+                : hasCheckedInToday
+                  ? `Checked ✓  (Streak ${streakCount})`
+                  : `Daily Check-in  (Streak ${streakCount})`}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.checkinHint}>
+            Come back each day to keep your streak going.
+          </Text>
+        </View>
+
         {/* Map */}
         <Text style={styles.sectionTitle}>Map</Text>
         {location ? (
@@ -635,6 +706,19 @@ const styles = StyleSheet.create({
   quickBtn: { flex: 1, alignItems: 'center', paddingVertical: 8, gap: 6 },
   quickIconImg: { width: 28, height: 28, resizeMode: 'contain' },
   quickText: { fontWeight: '700', color: '#111827', fontSize: 12 },
+
+  // Daily check-in
+  checkinBtn: {
+    height: 46,
+    backgroundColor: PRIMARY,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  checkinBtnDisabled: { backgroundColor: '#94c5ee' },
+  checkinBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  checkinHint: { textAlign: 'center', marginTop: 6, color: TEXT_MUTED, fontSize: 12 },
 
   mapHint: { fontSize: 12, color: TEXT_MUTED, marginBottom: 12 },
 

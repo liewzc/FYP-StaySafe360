@@ -13,16 +13,21 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { logDisasterResult } from '../../utils/quizStorage';
-// Achievements: mark sublevel completed on perfect score + increment share metric
-import { recordLocalAttempt, logShareOnce, markDisaster10SublevelComplete } from '../../utils/achievements';
+
+// Use local achievements & stats only
+import {
+  recordLocalAttempt,
+  logShareOnce,
+  markDisaster10SublevelComplete,
+} from '../../utils/achievements';
+
 import TopBarBack from '../../components/ui/TopBarBack';
 
 export default function ResultShareScreen() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Route params (with sensible defaults)
+  // Route params
   const {
     score: rawScore = 0,
     total: rawTotal = 100,
@@ -32,11 +37,11 @@ export default function ResultShareScreen() {
     answers = [],
   } = route.params || {};
 
-  // Sanitize inputs
+  // Normalize inputs to valid numbers (guards against NaN/undefined)
   const score = Number.isFinite(rawScore) ? rawScore : 0;
   const total = Number.isFinite(rawTotal) && rawTotal > 0 ? rawTotal : 100;
 
-  // Percentage & thresholds
+  // Compute percentage and performance flags
   const pct = useMemo(
     () => Math.max(0, Math.min(100, Math.round((score / total) * 100))),
     [score, total]
@@ -47,7 +52,7 @@ export default function ResultShareScreen() {
   const accent = isPerfect ? '#10B981' : isGood ? '#0B6FB8' : '#EF4444';
   const accentSoft = isPerfect ? '#E8FFF6' : isGood ? '#F1F7FE' : '#FFF1F2';
 
-  // Dynamic accent colors based on result
+  // Animated count-up for the large score display
   const animVal = useRef(new Animated.Value(0)).current;
   const [displayScore, setDisplayScore] = useState(0);
   const [showReview, setShowReview] = useState(false);
@@ -58,7 +63,7 @@ export default function ResultShareScreen() {
     return () => animVal.removeListener(id);
   }, [score, animVal]);
 
-  // Score animation
+  // Persist attempt exactly once per mount
   const loggedRef = useRef(false);
   useEffect(() => {
     if (loggedRef.current) return;
@@ -66,16 +71,7 @@ export default function ResultShareScreen() {
 
     (async () => {
       try {
-        // 1) Remote analytics/log
-        await logDisasterResult({
-          disasterType,
-          level: null,
-          subLevel,
-          score: Number(score),
-          timeSpentMs,
-        });
-
-        // 2) Local persistence
+        // 1) Store the full attempt payload locally
         const attemptId = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const created_at = new Date().toISOString();
         const attempt = {
@@ -92,13 +88,14 @@ export default function ResultShareScreen() {
 
         await AsyncStorage.setItem(`attempt:${attemptId}`, JSON.stringify(attempt));
 
+        // 2) Update a lightweight index for list screens (keep up to 500 recent)
         const idxRaw = await AsyncStorage.getItem('attemptIndex');
         const idx = idxRaw ? JSON.parse(idxRaw) : [];
         const summary = { id: attemptId, kind: 'disaster', disasterType, subLevel, score, total, created_at };
         await AsyncStorage.setItem('attemptIndex', JSON.stringify([summary, ...idx].slice(0, 500)));
 
-        // 3) Achievement tracking
-        if (score === total) {
+        // 3) Achievements: only on perfect score
+        if (isPerfect) {
           await recordLocalAttempt({
             domain: 'disaster',
             categoryId: String(disasterType),
@@ -107,21 +104,17 @@ export default function ResultShareScreen() {
             total,
             timeMs: timeSpentMs || 0,
           });
+          await markDisaster10SublevelComplete(disasterType, subLevel);
         }
 
         AccessibilityInfo.announceForAccessibility?.('Your result has been saved.');
-
-        // 4) Mark sublevel completed if perfect
-        if (isPerfect) {
-          await markDisaster10SublevelComplete(disasterType, subLevel);
-        }
       } catch (e) {
         console.warn('Failed to save result:', e?.message || e);
       }
     })();
   }, [disasterType, subLevel, score, timeSpentMs, total, answers, isPerfect]);
 
-  // Share score (haptics + OS share sheet) and log a one-time share event
+  // Share handler: haptic feedback → OS share sheet → one-time "share" achievement
   const handleShare = async () => {
     try {
       Haptics.impactAsync?.(Haptics.ImpactFeedbackStyle.Medium);
@@ -133,13 +126,11 @@ export default function ResultShareScreen() {
     }
   };
 
-  // Back to quiz home
   const handleBackHome = () => {
     Haptics.selectionAsync?.();
     navigation.navigate('Main', { screen: 'Quiz' });
   };
 
-  // Human-readable time spent
   const timeText = useMemo(() => {
     const sec = Math.max(0, Math.round(timeSpentMs / 1000));
     if (sec < 60) return `${sec}s`;
@@ -176,7 +167,11 @@ export default function ResultShareScreen() {
             {displayScore} / {total}
           </Text>
 
-          <View style={styles.progressBarBackground} accessibilityRole="progressbar" accessibilityValue={{ now: pct, min: 0, max: 100 }}>
+          <View
+            style={styles.progressBarBackground}
+            accessibilityRole="progressbar"
+            accessibilityValue={{ now: pct, min: 0, max: 100 }}
+          >
             <View style={[styles.progressBarFill, { width: `${pct}%`, backgroundColor: accent }]} />
           </View>
           <Text style={styles.pctText}>{pct}%</Text>
@@ -191,8 +186,13 @@ export default function ResultShareScreen() {
               <Text style={styles.primaryBtnText}>📤 Share</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.secondaryBtn, { borderColor: accent }]} onPress={() => setShowReview(v => !v)}>
-              <Text style={[styles.secondaryBtnText, { color: accent }]}>{showReview ? 'Hide review' : '🔎 Review answers'}</Text>
+            <TouchableOpacity
+              style={[styles.secondaryBtn, { borderColor: accent }]}
+              onPress={() => setShowReview((v) => !v)}
+            >
+              <Text style={[styles.secondaryBtnText, { color: accent }]}>
+                {showReview ? 'Hide review' : '🔎 Review answers'}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -214,8 +214,10 @@ export default function ResultShareScreen() {
                   const spent = a?.timeSpentSec != null ? `${a.timeSpentSec}s` : '';
 
                   return (
-                    <View key={`${idx}-${a?.question?.slice(0, 6)}`} style={styles.qItem}>
-                      <Text style={styles.qTitle}>{idx + 1}. {a?.question}</Text>
+                    <View key={`${idx}-${(a?.question || '').slice(0, 6)}`} style={styles.qItem}>
+                      <Text style={styles.qTitle}>
+                        {idx + 1}. {a?.question}
+                      </Text>
                       <Text style={[styles.qLine, ok ? styles.ok : styles.notOk]}>
                         Your answer: {letter}. {picked}
                       </Text>
@@ -263,7 +265,15 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 12, fontWeight: '700' },
 
   score: { fontSize: 32, fontWeight: '900', textAlign: 'center', marginTop: 8, marginBottom: 6 },
-  progressBarBackground: { width: '100%', height: 14, backgroundColor: '#E5E7EB', borderRadius: 999, overflow: 'hidden', position: 'relative', marginTop: 6 },
+  progressBarBackground: {
+    width: '100%',
+    height: 14,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 999,
+    overflow: 'hidden',
+    position: 'relative',
+    marginTop: 6,
+  },
   progressBarFill: { height: '100%', borderRadius: 999 },
   pctText: { fontSize: 12, color: '#6B7280', textAlign: 'right', marginTop: 6 },
 

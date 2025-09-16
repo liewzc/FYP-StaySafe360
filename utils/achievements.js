@@ -1,32 +1,24 @@
 // utils/achievements.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getHistory } from './quizStorage';
-import { supabase } from '../supabaseClient';
 
-/** ===== Constants ===== */
-const FIRST_AID_CATS = 5 + 10;
-const FIRST_AID_SUBLEVELS_PER_CAT = 4;
-const DISASTER_CATS = 5;
-const DISASTER_SUBLEVELS_PER_CAT = 10;
-const KNOWLEDGE_TOTAL_ARTICLES = 15;
+// Constants
+const FIRST_AID_CATS = 5 + 10;              // Total First Aid categories 
+const FIRST_AID_SUBLEVELS_PER_CAT = 4;      // 4 sublevels per First Aid category
+const DISASTER_CATS = 5;                    // Total Disaster categories
+const DISASTER_SUBLEVELS_PER_CAT = 10;      // 10 sublevels per Disaster category
+const KNOWLEDGE_TOTAL_ARTICLES = 15;        // Total articles
 
-// After a full wipe, temporarily skip server reads so the UI renders "empty" immediately
-const WIPE_SKIP_KEY = 'progress.wipe.skipServer'; // number (ms)
-const WIPE_SKIP_MS  = 20 * 1000;
-
-// Storage keys
+//Storage Keys
 const K = {
-  shares: 'progress.shares',// number of times result shared
-  readIds: 'knowledge.readIds',// array of read article ids
-  streakCount: 'streak.count',// day count
-  streakLast: 'streak.lastActive',// YYYY-MM-DD string
-
-  // Written only on perfect scores
-  disasterCompleted: 'progress.disaster.completed', // { [disasterType]: { [subLevel]: true } }
-  everydayCompleted: 'progress.everyday.completed', // { [categoryKey]:  { [subLevel]: true } }
+  shares: 'progress.shares',
+  readIds: 'knowledge.readIds',
+  streakCount: 'streak.count',
+  streakLast: 'streak.lastActive',
+  disasterCompleted: 'progress.disaster.completed',   // { [disasterType]: { [subLevel]: true } }
+  everydayCompleted: 'progress.everyday.completed',   // { [categoryKey]:  { [subLevel]: true } }
 };
 
-/** ===== Helpers ===== */
+// Helpers
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const percent = (v, target) => {
   if (!target) return 100;
@@ -46,7 +38,7 @@ async function readJson(key, fallback = {}) {
   return v ? JSON.parse(v) : fallback;
 }
 
-// attempts -> {domain, categoryId, sublevelId, score, total, timeMs, ts}[]
+// Local attempts: read summaries + resolve details
 async function readLocalAttempts() {
   const idxRaw = await AsyncStorage.getItem('attemptIndex');
   const idx = idxRaw ? JSON.parse(idxRaw) : [];
@@ -58,54 +50,58 @@ async function readLocalAttempts() {
       const detail = detailRaw ? JSON.parse(detailRaw) : null;
       out.push({
         domain: s.kind === 'firstaid' ? 'firstaid' : 'disaster',
-        categoryId: String(s.disasterType || s.topic || '—'),
-        sublevelId: String(s.subLevel || '—'),
-        score: Number(s.score || detail?.score || 0),
-        total: Number(s.total || detail?.total || 0),
-        timeMs: Number(detail?.timeSpentMs || 0),
+        categoryId: String(s.disasterType || s.topic || s.disaster || '—'),
+        sublevelId: String(s.subLevel || s.sublevel || '—'),
+        score: Number(s.score ?? detail?.score ?? 0),
+        total: Number(s.total ?? detail?.total ?? 0),
+        timeMs: Number(detail?.timeSpentMs ?? 0),
         ts: s.created_at || detail?.created_at || new Date().toISOString(),
       });
     } catch {
-      // ignore
+      // ignore a single corrupted entry
     }
   }
   return out;
 }
 
-// Read attempts from server
-async function readServerAttempts() {
-  const a = await getHistory('disaster', 200);
-  const b = await getHistory('everydayfirstaid', 200);
-  const norm = (rows, domain) =>
-    (rows || []).map(r => ({
-      domain,
-      categoryId: String(r.disaster || r.disasterType || r.topic || '—'),
-      sublevelId: String(r.sublevel || r.subLevel || '—'),
-      score: Number(r.score || 0),
-      total: Number.isFinite(r.total) ? Number(r.total) : NaN,
-      timeMs: Number.isFinite(r.time_sec) ? r.time_sec * 1000 : 0,
-      ts: r.created_at || r.finished_at || new Date().toISOString(),
-    }));
-  return [...norm(a, 'disaster'), ...norm(b, 'firstaid')];
+// Record a local attempt (results screens can also call markXXComplete on PERFECT).
+export async function recordLocalAttempt({ domain, categoryId, sublevelId, score, total, timeMs }) {
+  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const created_at = new Date().toISOString();
+
+  const detail = {
+    domain, categoryId, sublevelId,
+    score: Number(score || 0),
+    total: Number(total || 0),
+    timeSpentMs: Number(timeMs || 0),
+    created_at,
+  };
+  await AsyncStorage.setItem(`attempt:${id}`, JSON.stringify(detail));
+
+  const row = {
+    id,
+    kind: domain === 'firstaid' ? 'firstaid' : 'disaster',
+    topic: categoryId,
+    disasterType: categoryId,
+    subLevel: sublevelId,
+    score: Number(score || 0),
+    total: Number(total || 0),
+    created_at,
+  };
+  const idxRaw = await AsyncStorage.getItem('attemptIndex');
+  const idx = idxRaw ? JSON.parse(idxRaw) : [];
+  idx.push(row);
+  await AsyncStorage.setItem('attemptIndex', JSON.stringify(idx));
 }
 
-// Merge local + server attempts
-function mergeAttempts(localArr, serverArr) {
-  const day = (ts) => (ts || '').slice(0, 10);
-  const keyOf = (x) => `${x.domain}|${x.categoryId}|${x.sublevelId}|${day(x.ts)}`;
-  const map = new Map();
-  for (const r of serverArr) map.set(keyOf(r), r);
-  for (const r of localArr) map.set(keyOf(r), r); 
-  return Array.from(map.values());
-}
-
-// Public writers
+// Increment share counter
 export async function logShareOnce() {
   const n = await readNumber(K.shares, 0);
   await AsyncStorage.setItem(K.shares, String(n + 1));
   await bumpStreak();
 }
-// Mark a knowledge article as read (idempotent) and bump streak
+
+// Mark an article as read
 export async function markArticleRead(articleId) {
   const arr = await readArray(K.readIds);
   if (!arr.includes(articleId)) {
@@ -114,16 +110,38 @@ export async function markArticleRead(articleId) {
     await bumpStreak();
   }
 }
-// Daily streak bookkeeping
+
+// Internal: bump the streak if last-active != today
 async function bumpStreak() {
   const last = await AsyncStorage.getItem(K.streakLast);
   const today = todayStr();
   if (last === today) return;
   const n = await readNumber(K.streakCount, 0);
-  await AsyncStorage.multiSet([[K.streakCount, String(n + 1)], [K.streakLast, today]]);
+  await AsyncStorage.multiSet([
+    [K.streakCount, String(n + 1)],
+    [K.streakLast, today],
+  ]);
 }
 
-// Mark a Disaster sublevel as completed
+//  Home “Check-in” button: explicit daily streak bump
+export async function checkInToday() {
+  const last = await AsyncStorage.getItem(K.streakLast);
+  const today = todayStr();
+  if (last === today) return { ok: false, message: 'Already checked in today' };
+  const n = await readNumber(K.streakCount, 0);
+  await AsyncStorage.multiSet([
+    [K.streakCount, String(n + 1)],
+    [K.streakLast, today],
+  ]);
+  return { ok: true, message: 'Checked in!' };
+}
+
+// App-start “passive check-in”
+export async function touchDailyStreak() {
+  await bumpStreak();
+}
+
+// mark a Disaster sublevel as completed
 export async function markDisaster10SublevelComplete(disasterType, subLevel) {
   try {
     const data = await readJson(K.disasterCompleted, {});
@@ -139,7 +157,7 @@ export async function markDisaster10SublevelComplete(disasterType, subLevel) {
   }
 }
 
-// Mark an Everyday First Aid sublevel as completed
+// mark an Everyday (First Aid) sublevel as completed.
 export async function markEverydaySublevelComplete(categoryKey, subLevel) {
   try {
     const data = await readJson(K.everydayCompleted, {});
@@ -155,24 +173,14 @@ export async function markEverydaySublevelComplete(categoryKey, subLevel) {
   }
 }
 
-// Compute the full achievement progress map for the UI
-export async function computeAchievementProgressMap(opts = {}) {
-  const { ignoreServer = false } = opts ?? {};
-
-  // After a full wipe, optionally skip server to ensure immediate empty UI
-  const wipeTsRaw = await AsyncStorage.getItem(WIPE_SKIP_KEY);
-  const now = Date.now();
-  const shouldSkipServer = ignoreServer || (wipeTsRaw && (now - Number(wipeTsRaw) < WIPE_SKIP_MS));
-
-  // 1) Gather attempts (used for perfect/fast, beyond completion sets)
-  const local = await readLocalAttempts();
-  const server = shouldSkipServer ? [] : (await readServerAttempts());
-  const attempts = mergeAttempts(local, server);
-
+// Compute achievement progress map
+export async function computeAchievementProgressMap() {
+  // 1) Attempts: detect any perfect / any fast
+  const attempts = await readLocalAttempts();
   const hasPerfect = attempts.some(a => Number.isFinite(a.total) && a.total > 0 && a.score === a.total);
   const hasFast = attempts.some(a => (a.timeMs || 0) > 0 && a.timeMs <= 20000);
 
-  // 2) Completion sets (written only on perfect scores by result pages)
+  // 2) Sets of PERFECT completions
   const dzCompleted = await readJson(K.disasterCompleted, {}); // { Flood: { 'Ⅰ': true }, ... }
   const faCompleted = await readJson(K.everydayCompleted, {}); // { cpr_basics: { 'Ⅰ': true }, ... }
 
@@ -190,7 +198,7 @@ export async function computeAchievementProgressMap(opts = {}) {
   const dzDone = countCompleted(dzCompleted);
   const faDone = countCompleted(faCompleted);
 
-  // One perfect sublevel equals one completed quiz for General milestones
+  // Total perfect quizzes
   const completedTotal = faDone.subCount + dzDone.subCount;
 
   // 3) Other counters
@@ -198,7 +206,7 @@ export async function computeAchievementProgressMap(opts = {}) {
   const readIds = await readArray(K.readIds);
   const streak = await readNumber(K.streakCount, 0);
 
-  // 4) Build progress map
+  // 4) Aggregate progress map
   const map = {};
 
   // —— General
@@ -207,9 +215,9 @@ export async function computeAchievementProgressMap(opts = {}) {
   map['ks10']  = percent(completedTotal, 10);
   map['ks50']  = percent(completedTotal, 50);
 
-  map['perfect1'] = hasPerfect ? 100 : 0;   
-  map['fast1']    = hasFast ? 100 : 0;      
-  map['share1']   = shares > 0 ? 100 : 0;    
+  map['perfect1'] = hasPerfect ? 100 : 0;     // At least one perfect quiz
+  map['fast1']    = hasFast ? 100 : 0;        // Any quiz done in ≤ 20s
+  map['share1']   = shares > 0 ? 100 : 0;     // Shared at least once
 
   // —— First Aid
   map['fa_sub_1']   = percent(faDone.subCount, 1);
@@ -244,6 +252,7 @@ export async function computeAchievementProgressMap(opts = {}) {
   map['kn10']  = percent(readCount, 10);
   map['kn15']  = percent(readCount, KNOWLEDGE_TOTAL_ARTICLES);
 
+  // Backward
   map['dz_completed_sub'] = percent(dzDone.subCount, DISASTER_CATS * DISASTER_SUBLEVELS_PER_CAT);
   map['dz_completed_cat'] = percent(dzDone.catCount, DISASTER_CATS);
   map['fa_completed_sub'] = percent(faDone.subCount, FIRST_AID_CATS * FIRST_AID_SUBLEVELS_PER_CAT);
@@ -252,37 +261,8 @@ export async function computeAchievementProgressMap(opts = {}) {
   return map;
 }
 
-// Record a local attempt (detail + index row)
-export async function recordLocalAttempt({ domain, categoryId, sublevelId, score, total, timeMs }) {
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const created_at = new Date().toISOString();
-
-  const detail = { domain, categoryId, sublevelId, score, total, timeSpentMs: timeMs || 0, created_at };
-  await AsyncStorage.setItem(`attempt:${id}`, JSON.stringify(detail));
-
-  const row = {
-    id,
-    kind: domain === 'firstaid' ? 'firstaid' : 'disaster',
-    topic: categoryId,
-    disasterType: categoryId,
-    subLevel: sublevelId,
-    score,
-    total,
-    created_at,
-  };
-  const idxRaw = await AsyncStorage.getItem('attemptIndex');
-  const idx = idxRaw ? JSON.parse(idxRaw) : [];
-  idx.push(row);
-  await AsyncStorage.setItem('attemptIndex', JSON.stringify(idx));
-}
-
-// Simple daily check-in
-export async function touchDailyStreak() {
-  await bumpStreak();
-}
-
-// Local-only clear (testing / keep data server-side)
-export async function clearAchievementData() {
+// Full local reset
+export async function clearAchievementDataFull() {
   try {
     const keys = await AsyncStorage.getAllKeys();
     const toRemove = keys.filter((k) =>
@@ -293,38 +273,17 @@ export async function clearAchievementData() {
       k === K.disasterCompleted ||
       k === K.everydayCompleted ||
       k === 'attemptIndex' ||
-      k.startsWith('attempt:')
+      k.startsWith('attempt:') ||
+      k.startsWith('quiz_history_fallback_')
     );
     if (toRemove.length) await AsyncStorage.multiRemove(toRemove);
   } catch (e) {
-    console.warn('clearAchievementData failed:', e);
+    console.warn('clearAchievementDataFull failed:', e?.message || e);
   }
 }
 
-// Full clear (local + server) and set a short-lived "skip server" flag
-export async function clearAchievementDataFull() {
-  try {
-    await AsyncStorage.setItem(WIPE_SKIP_KEY, String(Date.now()));
+// Back-compat alias: same as Full local reset.
+export const clearAchievementData = clearAchievementDataFull;
 
-    // 1) Local
-    await clearAchievementData();
-
-    // 2) Server (delete from supabase 'quiz_history' for the current user)
-    const { data: userData, error: userErr } = await supabase.auth.getUser();
-    if (userErr) throw userErr;
-    const userId = userData?.user?.id;
-    if (userId) {
-      const { error } = await supabase
-        .from('quiz_history')
-        .delete()
-        .eq('user_id', userId);
-      if (error) throw error;
-    }
-
-    // Refresh the flag timestamp to keep the 20s window
-    await AsyncStorage.setItem(WIPE_SKIP_KEY, String(Date.now()));
-    console.log('✅ 成就数据已清空（本地 + 云端）');
-  } catch (e) {
-    console.warn('❌ clearAchievementDataFull failed:', e.message || e);
-  }
-}
+// Export keys if needed (debug/tools)
+export const __ACH_KEYS__ = K;

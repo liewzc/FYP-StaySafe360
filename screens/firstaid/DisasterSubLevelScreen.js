@@ -29,9 +29,7 @@ export default function DisasterSubLevelScreen({
             >
               <View style={styles.row}>
                 <Text style={styles.cardTitle}>Sublevel {sub}</Text>
-                <View style={[styles.badge, { backgroundColor: done ? '#16a34a' : '#ef4444' }]}>
-                  <Text style={styles.badgeText}>{done ? 'Complete' : 'Incomplete'}</Text>
-                </View>
+                {/* badge removed */}
               </View>
               <Text style={styles.cardHint}>
                 {done ? "You've completed this sublevel." : 'Tap to begin this sublevel quiz.'}
@@ -54,9 +52,8 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontSize: 12, color: '#6b7280', marginBottom: 20, textAlign: 'center' },
   card: { backgroundColor: '#f7fbff', borderColor: '#e6f1fb', borderWidth: 1, borderRadius: 12, padding: 16, marginBottom: 12 },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', marginBottom: 4 },
   cardTitle: { fontSize: 16, fontWeight: '800', color: '#0f172a' },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 },
-  badgeText: { color: '#fff', fontSize: 12, fontWeight: '800' },
+  // badge styles removed
   cardHint: { fontSize: 13, color: '#374151', marginTop: 4 },
 });

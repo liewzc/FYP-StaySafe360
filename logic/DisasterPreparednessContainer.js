@@ -11,7 +11,7 @@ export default function DisasterPreparednessContainer() {
     { key: 'Lightning',       title: 'Lightning', img: require('../assets/disasterpreparedness/lightning.jpg') },
     { key: 'Haze',            title: 'Haze',      img: require('../assets/disasterpreparedness/haze.jpg') },
     { key: 'Heatwave',        title: 'Heatwave',  img: require('../assets/disasterpreparedness/heat.jpg') },
-    { key: 'CoastalFlooding', title: 'Coastal',   img: require('../assets/disasterpreparedness/coastal.jpg') },
+    { key: 'Coastal', title: 'Coastal',   img: require('../assets/disasterpreparedness/coastal.jpg') },
   ]), []);
 
   const onOpen = useCallback((item) => {

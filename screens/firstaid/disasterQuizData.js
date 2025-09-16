@@ -614,7 +614,7 @@ export const QUIZ_BANK = {
     ],
   },
 
-  CoastalFlooding: {
+  Coastal: {
     'Ⅰ': [
       {
         id: 1,
