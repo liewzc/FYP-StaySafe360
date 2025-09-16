@@ -1,7 +1,3 @@
-// __tests__/component/App.simple.test.js
-/**
- * Minimal test to debug the rendering issue
- */
 import React from 'react';
 import { Text } from 'react-native';
 import { render } from '@testing-library/react-native';

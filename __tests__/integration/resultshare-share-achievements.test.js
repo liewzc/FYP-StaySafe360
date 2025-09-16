@@ -1,9 +1,3 @@
-// __tests__/integration/resultshare-share-achievements.test.js
-/** @jest-environment jsdom */
-
-/* ---------- 先 mock 掉会触发 ESM/原生绑定的依赖 ---------- */
-
-// 完整 mock @react-navigation/native（避免加载其 ESM）
 jest.mock(
   '@react-navigation/native',
   () => {
@@ -59,7 +53,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
 }, { virtual: true });
 
-// Animated helper（兼容存在/不存在）
+// Animated helper
 try {
   // eslint-disable-next-line import/no-unresolved
   require.resolve('react-native/Libraries/Animated/NativeAnimatedHelper');
@@ -67,8 +61,6 @@ try {
 } catch {
   jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}), { virtual: true });
 }
-
-/* ---------- 功能相关 mocks ---------- */
 
 // AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -88,16 +80,14 @@ import { Share, AccessibilityInfo } from 'react-native';
 jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
 jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 
-/* ---------- 正式导入 ---------- */
 import React from 'react';
 import { render, fireEvent, screen, waitFor, act } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import ResultShareScreen from '../../screens/quiz/ResultShareScreen';
 
-/* ---------- 启用 & 清理假定时器，防止 teardown 后还有定时器 ---------- */
 beforeAll(() => {
-  jest.useFakeTimers();           // 使用现代 fake timers
+  jest.useFakeTimers();         
 });
 afterEach(() => {
   jest.runOnlyPendingTimers();
@@ -113,7 +103,6 @@ const renderWithProviders = (ui) =>
     </SafeAreaProvider>
   );
 
-/* ---------- 用例 ---------- */
 describe('Integration: ResultShareScreen share increments achievements share counter', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();

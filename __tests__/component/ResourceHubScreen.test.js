@@ -1,13 +1,11 @@
-// __tests__/component/ResourceHubScreen.test.js
 import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 
-/** ---------- 精准静音：仅忽略 not wrapped in act(...) ---------- */
 const realConsoleError = console.error;
 beforeAll(() => {
   jest.spyOn(console, 'error').mockImplementation((...args) => {
     const first = (args[0]?.toString?.() || '');
-    if (first.includes('not wrapped in act(')) return; // 只忽略这条噪音
+    if (first.includes('not wrapped in act(')) return; 
     return realConsoleError(...args);
   });
 });
@@ -15,7 +13,6 @@ afterAll(() => {
   console.error?.mockRestore?.();
 });
 
-/** ---------- 兼容不同 RN 版本的 Animated helper 路径 ---------- */
 const animatedHelperPaths = [
   'react-native/Libraries/Animated/NativeAnimatedHelper',
   'react-native/Libraries/Animated/src/NativeAnimatedHelper',
@@ -27,7 +24,6 @@ for (const p of animatedHelperPaths) {
   } catch {}
 }
 
-/** ---------- gesture-handler 基础 mock ---------- */
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -44,7 +40,6 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-/** ---------- reanimated（很多导航/动画依赖它） ---------- */
 try {
   jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 } catch {
@@ -77,7 +72,6 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-/** ---------- 向量图标：工厂内部 require，避免 ESM 问题 ---------- */
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
   const { Text } = require('react-native');
@@ -85,7 +79,6 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: I, MaterialCommunityIcons: I, FontAwesome5: I };
 });
 
-/** ---------- 导航 mock：提供 useFocusEffect/useIsFocused 等 ---------- */
 jest.mock('@react-navigation/native', () => {
   const React = require('react');
   return {
@@ -95,7 +88,7 @@ jest.mock('@react-navigation/native', () => {
     useRoute: () => ({ params: {} }),
     useIsFocused: () => true,
     useFocusEffect: (cb) => {
-      // 在测试里通过 effect 立即触发一次 cb（与真实行为等价于已聚焦）
+
       React.useEffect(() => {
         const cleanup = typeof cb === 'function' ? cb(() => {}) : undefined;
         return typeof cleanup === 'function' ? cleanup : undefined;
@@ -106,7 +99,6 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
-/** ---------- AsyncStorage：内存版实现 ---------- */
 jest.mock('@react-native-async-storage/async-storage', () => {
   let store = {};
   const api = {
@@ -122,7 +114,6 @@ jest.mock('@react-native-async-storage/async-storage', () => {
   return { __esModule: true, default: api };
 });
 
-/** ---------- resourceData 虚拟实现（若屏幕直接从该路径 default 导入） ---------- */
 const path = require('path');
 const resourceDataPath = path.join(process.cwd(), 'screens', 'knowledge', 'resourceData.js');
 jest.doMock(
@@ -137,12 +128,10 @@ jest.doMock(
   { virtual: true }
 );
 
-/** ---------- 在所有 mocks 之后再引入被测组件 ---------- */
 const Screen =
   require('../../screens/knowledge/quickaccess/ResourceHubScreen').default ||
   require('../../screens/knowledge/quickaccess/ResourceHubScreen');
 
-/** ---------- 取到 mock 的 AsyncStorage 以便断言 ---------- */
 const AsyncStorage =
   require('@react-native-async-storage/async-storage').default;
 
@@ -150,8 +139,6 @@ describe('ResourceHubScreen (component)', () => {
   test('renders (smoke) without act warning', async () => {
     const { toJSON } = render(<Screen />);
 
-    // ✅ 正面消除：等待一次异步 effect 完成（waitFor 内置 act）
-    // 如果你的实现读取的 key 不是 'bookmarks'，改成实际的 key（如 'savedResources'）
     await waitFor(() => {
       expect(AsyncStorage.getItem).toHaveBeenCalled();
     });

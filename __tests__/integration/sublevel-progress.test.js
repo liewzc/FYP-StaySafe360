@@ -1,7 +1,3 @@
-// __tests__/integration/sublevel-progress.test.js
-/** @jest-environment jsdom */
-
-// ---- Mocks: navigation / safe-area / icons / gesture / Animated ----
 jest.mock(
   '@react-navigation/native',
   () => {
@@ -107,7 +103,7 @@ describe('Integration: SubLevelScreen progress display', () => {
   });
 
   test('shows Complete badge for finished sublevel', async () => {
-    // 写入最新进度结构
+
     await AsyncStorage.setItem(
       PROGRESS_KEY,
       JSON.stringify({ Flood: { 'Ⅰ': 'complete' } })
@@ -115,14 +111,11 @@ describe('Integration: SubLevelScreen progress display', () => {
 
     renderWithProviders(<SubLevelScreen />);
 
-    // 1) “Complete” 可能出现多处，用 findAllByText 并断言至少 1 个
     const completes = await screen.findAllByText(/Complete/i);
     expect(completes.length).toBeGreaterThan(0);
 
-    // 2) 也应能看到 “Sublevel Ⅰ” 卡片标题
     expect(await screen.findByText(/Sublevel\s*Ⅰ/i)).toBeTruthy();
 
-    // 3) （可选）更强语义校验：看到解释文字
     expect(await screen.findByText(/You've completed this sublevel\./i)).toBeTruthy();
   });
 });

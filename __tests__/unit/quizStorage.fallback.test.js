@@ -1,5 +1,3 @@
-// __tests__/unit/quizStorage.fallback.test.js
-
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );

@@ -1,15 +1,7 @@
-/**
- * __tests__/integration/resultshare-write.test.js
- * 目标：ResultShareScreen 挂载后会把一次测验 attempt 写入：
- *  - 'attemptIndex' 为数组且长度 > 0
- *  - 'attempt:<id>' 详情存在
- */
-
 import React from 'react';
 import { Share, AccessibilityInfo } from 'react-native';
 import { render, waitFor, cleanup } from '@testing-library/react-native';
 
-/* ---------------- 定时器：legacy 假定时器，并在用例后清理 ---------------- */
 beforeEach(() => {
   jest.useFakeTimers({ legacyFakeTimers: true });
   jest.setTimeout(10000);
@@ -25,7 +17,6 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-/* ---------------- 完全 stub 导航（避免 ESM），并提供 useFocusEffect ---------------- */
 jest.mock('@react-navigation/native', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -53,7 +44,6 @@ jest.mock('@react-navigation/native', () => {
   };
 });
 
-/* ---------------- Safe Area / 手势 / 图标 轻量 stub ---------------- */
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -91,13 +81,11 @@ jest.mock(
   { virtual: true }
 );
 
-/* ---------------- AsyncStorage 官方 mock（自包含） ---------------- */
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/* ---------------- Haptics / Share / A11y 静默 ---------------- */
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(),
   selectionAsync: jest.fn(),
@@ -106,7 +94,7 @@ jest.mock('expo-haptics', () => ({
 jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction });
 jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 
-/* ---------------- 被测组件及 Provider from mocks（避免顶层 import 触发 ESM） ---------------- */
+
 import ResultShareScreen from '../../screens/quiz/ResultShareScreen';
 const { SafeAreaProvider } = require('react-native-safe-area-context');
 const { NavigationContainer } = require('@react-navigation/native');
@@ -118,7 +106,6 @@ const renderWithProviders = (ui) =>
     </SafeAreaProvider>
   );
 
-/* -------------------------------- 测试 -------------------------------- */
 describe('Integration: ResultShareScreen writes attempt + index', () => {
   beforeEach(async () => {
     await AsyncStorage.clear();
@@ -128,7 +115,6 @@ describe('Integration: ResultShareScreen writes attempt + index', () => {
   test('mount side-effects save attempt & index to AsyncStorage', async () => {
     renderWithProviders(<ResultShareScreen />);
 
-    // 若组件内部有延迟写入，推进时间以触发
     jest.advanceTimersByTime(3000);
 
     await waitFor(

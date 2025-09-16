@@ -1,21 +1,19 @@
-// __tests__/component/BookmarksScreen.test.js
 import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 
-/** ---------- 精准静音：仅忽略 not wrapped in act(...) ---------- */
 const realConsoleError = console.error;
 beforeAll(() => {
   jest.spyOn(console, 'error').mockImplementation((...args) => {
     const first = (args[0]?.toString?.() || '');
-    if (first.includes('not wrapped in act(')) return; // 忽略这条噪音
-    return realConsoleError(...args); // 其他错误照常打印
+    if (first.includes('not wrapped in act(')) return; 
+    return realConsoleError(...args); 
   });
 });
 afterAll(() => {
   console.error.mockRestore();
 });
 
-/** ---------- RN Animated helper（某些 RN 版本无此模块，用 try 兼容） ---------- */
+/** ---------- RN Animated helper ---------- */
 try {
   jest.doMock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
 } catch {}
@@ -37,7 +35,6 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-/** ---------- reanimated（很多导航栈会依赖） ---------- */
 try {
   jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 } catch {
@@ -60,7 +57,6 @@ try {
   );
 }
 
-/** ---------- safe area ---------- */
 jest.mock('react-native-safe-area-context', () => {
   const React = require('react');
   return {
@@ -70,7 +66,6 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-/** ---------- AsyncStorage（避免 NativeModule: null） ---------- */
 jest.doMock(
   '@react-native-async-storage/async-storage',
   () => {
@@ -90,7 +85,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** ---------- vector icons（工厂里 require RN，避免 ESM 报错） ---------- */
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
   const { Text } = require('react-native');
@@ -98,7 +92,6 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: Icon, MaterialCommunityIcons: Icon, FontAwesome5: Icon };
 });
 
-/** ---------- 完全虚拟化 @react-navigation/native，避免 requireActual 触发 ESM ---------- */
 jest.doMock(
   '@react-navigation/native',
   () => {
@@ -130,12 +123,10 @@ jest.doMock(
   { virtual: true }
 );
 
-/** ---------- 读取被测组件（在所有 mocks 之后） ---------- */
 const Screen =
   require('../../screens/knowledge/quickaccess/BookmarksScreen').default ||
   require('../../screens/knowledge/quickaccess/BookmarksScreen');
 
-/** ---------- 引入被 mock 的 AsyncStorage 以便断言 ---------- */
 const AsyncStorage =
   require('@react-native-async-storage/async-storage').default;
 
@@ -143,7 +134,6 @@ describe('BookmarksScreen (component)', () => {
   test('renders without crashing (smoke) without act warning', async () => {
     const { toJSON } = render(<Screen />);
 
-    // 正面消除：等待 useEffect -> AsyncStorage -> setState 完成
     await waitFor(() => {
       expect(AsyncStorage.getItem).toHaveBeenCalledWith('bookmarks');
     });

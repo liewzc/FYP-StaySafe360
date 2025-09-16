@@ -1,12 +1,6 @@
-/**
- * __tests__/integration/achievements-after-perfect.test.js
- * 目标：满分后本地成就进度应更新：dz_sub_10=10, dz_cat_1=100, dz_cat_3=33
- */
-
 import React from 'react';
 import { render, waitFor, cleanup } from '@testing-library/react-native';
 
-// —— 关键：用“旧版假定时器”，避免 RN preset 的 teardown 冲突 —— 
 beforeEach(() => {
   jest.useFakeTimers({ legacyFakeTimers: true });
   jest.setTimeout(10000);
@@ -27,7 +21,6 @@ afterAll(() => {
   try { jest.clearAllTimers(); } catch {}
 });
 
-// ⚠️ 完全 stub 掉 Navigation
 jest.mock('@react-navigation/native', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -104,9 +97,6 @@ jest.mock('react-native/Libraries/Share/Share', () => ({
   share: jest.fn(async () => ({ action: 'sharedAction' })),
 }));
 
-// ✅ 删除 supabaseClient mock
-
-// 待测组件与工具
 import ResultShareScreen from '../../screens/quiz/ResultShareScreen';
 import { computeAchievementProgressMap } from '../../utils/achievements';
 

@@ -1,13 +1,10 @@
-// __tests__/component/HazardsHubScreen.test.js
 import React from 'react';
 import { render, waitFor } from '@testing-library/react-native';
 
-/** 兼容不同 RN 版本的 Animated helper 路径 */
 try {
   jest.doMock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
 } catch {}
 
-/** gesture-handler 基础 mock */
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -21,7 +18,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-/** reanimated（很多导航依赖它） */
+/** reanimated */
 try {
   jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 } catch {
@@ -54,7 +51,6 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-/** 向量图标：用 Text 占位，避免 ESM 解析问题 */
 jest.doMock(
   '@expo/vector-icons',
   () => {
@@ -66,7 +62,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** 最小导航 mock（不要 requireActual 以免 ESM 报错） */
 jest.doMock(
   '@react-navigation/native',
   () => ({
@@ -82,7 +77,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** ✅ AsyncStorage 内存 mock，修复 NativeModule: AsyncStorage is null */
 jest.doMock(
   '@react-native-async-storage/async-storage',
   () => {
@@ -102,7 +96,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** TopBarBack 等自定义 UI 组件轻量 mock（如果屏幕里有用到） */
 jest.doMock(
   '../../../components/ui/TopBarBack',
   () => {
@@ -112,21 +105,21 @@ jest.doMock(
   { virtual: true }
 );
 
-/** ✅ hazardsData：按组件的真实用法导出命名常量，且提供 cover 字段 */
+
 const path = require('path');
 const hazardsDataPath = path.join(process.cwd(), 'screens', 'knowledge', 'hazard', 'hazardsData.js');
 jest.doMock(
   hazardsDataPath,
   () => ({
     __esModule: true,
-    // 组件通常是通过 HAZARD_KEYS 遍历，然后用 HAZARDS[key]
+
     HAZARD_KEYS: ['flood', 'earthquake'],
     HAZARDS: {
       flood: {
         id: 'flood',
         title: 'Flood',
         icon: { lib: 'mci', name: 'water' },
-        // ✅ 提供可用的图片源，避免 ImageBackground 访问 undefined
+
         cover: { uri: 'about:blank#flood' },
       },
       earthquake: {
@@ -136,7 +129,7 @@ jest.doMock(
         cover: { uri: 'about:blank#earthquake' },
       },
     },
-    // 如果你的实现还默认导出一个数组，也一并给上（可有可无）
+
     default: [
       { id: 'flood', title: 'Flood', icon: { lib: 'mci', name: 'water' }, cover: { uri: 'about:blank#flood' } },
       { id: 'earthquake', title: 'Earthquake', icon: { lib: 'mci', name: 'earth' }, cover: { uri: 'about:blank#earthquake' } },
@@ -145,7 +138,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** 在所有 mocks 之后再引入被测组件 */
 const Screen =
   require('../../screens/knowledge/hazard/HazardsHubScreen').default ||
   require('../../screens/knowledge/hazard/HazardsHubScreen');
@@ -153,9 +145,8 @@ const Screen =
 describe('HazardsHubScreen (component)', () => {
   test('renders (smoke)', async () => {
     const { toJSON } = render(<Screen />);
-    // 等待首轮异步 useEffect（读 AsyncStorage 后 setState）完成，避免 act 警告
     await waitFor(() => {
-      // 只要树能成功渲染即可
+
       expect(toJSON()).toBeTruthy();
     });
   });

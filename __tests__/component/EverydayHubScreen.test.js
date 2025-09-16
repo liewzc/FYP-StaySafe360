@@ -1,8 +1,6 @@
-// __tests__/component/EverydayHubScreen.test.js
 import React from 'react';
 import { render } from '@testing-library/react-native';
 
-/** RN Animated helper 在不同 RN 版本路径可能不存在，用 try/catch 兜底 */
 try {
   jest.doMock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
 } catch {}
@@ -21,7 +19,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-/** reanimated（很多导航/动画会依赖） */
+/** reanimated */
 try {
   jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 } catch {
@@ -54,7 +52,6 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-/** 向量图标（避免 ESM 解析问题） */
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
   const { Text } = require('react-native');
@@ -62,7 +59,6 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: I, MaterialCommunityIcons: I, FontAwesome5: I };
 });
 
-/** 最小化的导航 mock，避免 requireActual 引入 ESM */
 jest.doMock(
   '@react-navigation/native',
   () => ({
@@ -78,7 +74,7 @@ jest.doMock(
   { virtual: true }
 );
 
-/** AsyncStorage（避免 NativeModule: null） */
+/** AsyncStorage */
 jest.doMock(
   '@react-native-async-storage/async-storage',
   () => {
@@ -108,7 +104,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** 在所有 mocks 之后再引入被测组件 */
 const Screen =
   require('../../screens/knowledge/everyday/EverydayHubScreen').default ||
   require('../../screens/knowledge/everyday/EverydayHubScreen');

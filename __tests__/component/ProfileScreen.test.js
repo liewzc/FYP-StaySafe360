@@ -1,10 +1,7 @@
-// __tests__/component/ProfileScreen.test.js
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Animated } from 'react-native';
 
-// ---- 轻量依赖 mocks（仅本文件内有效） ----
-// 1) 图标：用空 View 替代，避免 ESM/原生依赖问题
 jest.mock(
   '@expo/vector-icons',
   () => {
@@ -16,7 +13,6 @@ jest.mock(
   { virtual: true }
 );
 
-// 2) safe-area：返回 0 边距
 jest.mock(
   'react-native-safe-area-context',
   () => ({
@@ -26,10 +22,8 @@ jest.mock(
   { virtual: true }
 );
 
-// 3) 与组件里的 require 路径一致（ProfileScreen 中：require("../assets/profile_image/vibrate.png")）
 jest.mock('../assets/profile_image/vibrate.png', () => 1, { virtual: true });
 
-// ---- Animated.timing 同步化，避免 act 警告 ----
 let timingSpy;
 beforeAll(() => {
   timingSpy = jest.spyOn(Animated, 'timing').mockImplementation((value, config) => {
@@ -48,7 +42,6 @@ afterAll(() => {
   timingSpy?.mockRestore();
 });
 
-// ---- 被测组件 ----
 import ProfileScreen from '../../screens/ProfileScreen';
 
 function setup(props = {}) {
@@ -77,7 +70,6 @@ function setup(props = {}) {
   return { ...utils, props: all };
 }
 
-// 只取“真正可点击的开关”（最外层 Pressable，有 onPress），并按 onPress 引用去重
 function getUniqueClickableSwitches(queries) {
   const all = queries.UNSAFE_getAllByProps({ accessibilityRole: 'switch' }) || [];
   const clickable = all.filter((n) => typeof n?.props?.onPress === 'function');

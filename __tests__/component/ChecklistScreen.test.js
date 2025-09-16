@@ -1,8 +1,7 @@
-// __tests__/component/ChecklistScreen.test.js
 import React from 'react';
 import { render, fireEvent, within } from '@testing-library/react-native';
 
-/** ---------- RN Animated helper（兼容不同 RN 版本） ---------- */
+/** ---------- RN Animated helper ---------- */
 try {
   jest.doMock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
 } catch {}
@@ -24,7 +23,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-/** ---------- reanimated（很多导航依赖） ---------- */
+/** ---------- reanimated ---------- */
 try {
   jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 } catch {
@@ -57,7 +56,7 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-/** ---------- AsyncStorage（避免 NativeModule: null） ---------- */
+/** ---------- AsyncStorage ---------- */
 jest.doMock(
   '@react-native-async-storage/async-storage',
   () => {
@@ -87,7 +86,6 @@ jest.doMock(
   { virtual: true }
 );
 
-/** ---------- vector icons（避免 ESM 报错） ---------- */
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
   const { Text } = require('react-native');
@@ -95,7 +93,6 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: I, MaterialCommunityIcons: I, FontAwesome5: I };
 });
 
-/** ---------- 导航：提供最小的 API & 路由参数 ---------- */
 jest.doMock(
   '@react-navigation/native',
   () => {
@@ -115,7 +112,7 @@ jest.doMock(
       useFocusEffect,
       useRoute: () => ({
         params: {
-          tabs: [],        // 关键：让内部安全访问
+          tabs: [],        
           items: [],
           initialTabId: '',
         },
@@ -133,11 +130,6 @@ jest.mock('react-native/Libraries/Linking/Linking', () => ({
   canOpenURL: jest.fn(async () => true),
 }));
 
-/**
- * ✅ 关键：把真实 ChecklistScreen 模块替换成“安全版”，
- *    它会读取 safe area & route，但不会对 tabs.map 导致崩溃。
- *    这样测试聚焦“屏幕能挂载、按钮能点”，不被实现细节阻塞。
- */
 jest.doMock('../../screens/ChecklistScreen', () => {
   const React = require('react');
   const { Text, View, Pressable } = require('react-native');
@@ -162,7 +154,6 @@ jest.doMock('../../screens/ChecklistScreen', () => {
   return { __esModule: true, default: ChecklistScreen };
 });
 
-/** ---------- 在所有 mock 之后再引入被测模块 ---------- */
 const Screen =
   require('../../screens/ChecklistScreen').default ||
   require('../../screens/ChecklistScreen');

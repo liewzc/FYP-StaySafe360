@@ -1,13 +1,10 @@
-// __tests__/component/HomeScreen.test.js
 import React from 'react';
 import { render } from '@testing-library/react-native';
 
-/** 兼容不同 RN 版本的 Animated helper 路径 */
 try {
   jest.doMock('react-native/Libraries/Animated/NativeAnimatedHelper', () => ({}));
 } catch {}
 
-/** gesture-handler 基础 mock */
 jest.mock('react-native-gesture-handler', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
@@ -21,7 +18,7 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-/** reanimated（很多导航/动画依赖它） */
+/** reanimated */
 try {
   jest.mock('react-native-reanimated', () => require('react-native-reanimated/mock'));
 } catch {
@@ -54,7 +51,6 @@ jest.mock('react-native-safe-area-context', () => {
   };
 });
 
-/** 向量图标：工厂内部 require，避免作用域外变量 */
 jest.mock('@expo/vector-icons', () => {
   const React = require('react');
   const { Text } = require('react-native');
@@ -62,14 +58,12 @@ jest.mock('@expo/vector-icons', () => {
   return { Ionicons: Icon, MaterialCommunityIcons: Icon, FontAwesome5: Icon };
 });
 
-/** WebView（LeafletMiniMap 可能依赖） */
 jest.mock('react-native-webview', () => {
   const React = require('react');
   const View = ({ children }) => <>{children}</>;
   return { WebView: View, default: View };
 });
 
-/** AsyncStorage 简单内存实现 */
 jest.mock('@react-native-async-storage/async-storage', () => {
   let store = {};
   const api = {
@@ -85,7 +79,6 @@ jest.mock('@react-native-async-storage/async-storage', () => {
   return { __esModule: true, default: api };
 });
 
-/** 最小导航 mock（避免 ESM 解析问题） */
 jest.mock('@react-navigation/native', () => ({
   __esModule: true,
   NavigationContainer: ({ children }) => children ?? null,
@@ -95,7 +88,6 @@ jest.mock('@react-navigation/native', () => ({
   DarkTheme: {},
 }));
 
-/** ✅ 把 HomeScreen 本体 mock 成一个极简组件 */
 jest.doMock('../../screens/HomeScreen', () => {
   const React = require('react');
   const { Text, View } = require('react-native');
@@ -107,14 +99,13 @@ jest.doMock('../../screens/HomeScreen', () => {
   return { __esModule: true, default: HomeMock };
 });
 
-/** 引入被测组件（此时已被上面的 doMock 替换） */
 const Screen =
   require('../../screens/HomeScreen').default || require('../../screens/HomeScreen');
 
 describe('HomeScreen (component)', () => {
   test('renders (smoke)', () => {
     const { getByText, toJSON } = render(<Screen />);
-    // 改用 getByText 验证渲染
+
     expect(getByText('HomeScreenMock')).toBeTruthy();
     expect(toJSON()).toBeTruthy();
   });
