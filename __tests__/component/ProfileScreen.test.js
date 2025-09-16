@@ -1,22 +1,22 @@
 // __tests__/component/ProfileScreen.test.js
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { View, Text, Button } from 'react-native';
+import { Animated } from 'react-native';
 
-/* ---- 轻量依赖 mocks（仅本文件内有效） ---- */
+// ---- 轻量依赖 mocks（仅本文件内有效） ----
+// 1) 图标：用空 View 替代，避免 ESM/原生依赖问题
 jest.mock(
   '@expo/vector-icons',
   () => {
     const React = require('react');
     const { View } = require('react-native');
-    const Icon = ({ name, testID, ...props }) => (
-      <View testID={testID || `icon-${name}`} {...props} />
-    );
-    return { Ionicons: Icon, MaterialCommunityIcons: Icon };
+    const I = ({ testID, ...p }) => <View testID={testID || 'icon'} {...p} />;
+    return { Ionicons: I, MaterialCommunityIcons: I };
   },
   { virtual: true }
 );
 
+// 2) safe-area：返回 0 边距
 jest.mock(
   'react-native-safe-area-context',
   () => ({
@@ -26,72 +26,127 @@ jest.mock(
   { virtual: true }
 );
 
-jest.mock(
-  'react-native-image-picker',
-  () => ({ launchImageLibrary: jest.fn() }),
-  { virtual: true }
-);
+// 3) 与组件里的 require 路径一致（ProfileScreen 中：require("../assets/profile_image/vibrate.png")）
+jest.mock('../assets/profile_image/vibrate.png', () => 1, { virtual: true });
 
-/* ---- 只测交互的最小“假 Profile 组件” ---- */
-const MockProfileScreen = ({ username, email, onLogout, onAskPickAvatar }) => (
-  <View testID="profile-screen">
-    <Text testID="username">{username}</Text>
-    <Text testID="email">{email}</Text>
-    <Button testID="logout-button" title="Log Out" onPress={onLogout} />
-    <Button testID="avatar-button" title="Change Avatar" onPress={onAskPickAvatar} />
-  </View>
-);
-
-/* ---- 组件级别的基础用例 ---- */
-describe('ProfileScreen (component-only stub)', () => {
-  it('renders basic info', () => {
-    const onLogout = jest.fn();
-    const onAskPickAvatar = jest.fn();
-
-    render(
-      <MockProfileScreen
-        username="Test User"
-        email="test@example.com"
-        onLogout={onLogout}
-        onAskPickAvatar={onAskPickAvatar}
-      />
-    );
-
-    expect(screen.getByTestId('username').props.children).toBe('Test User');
-    expect(screen.getByTestId('email').props.children).toBe('test@example.com');
-    expect(screen.getByText('Log Out')).toBeTruthy();
-  });
-
-  it('fires button handlers', () => {
-    const onLogout = jest.fn();
-    const onAskPickAvatar = jest.fn();
-
-    render(
-      <MockProfileScreen
-        username="U"
-        email="e@x.com"
-        onLogout={onLogout}
-        onAskPickAvatar={onAskPickAvatar}
-      />
-    );
-
-    fireEvent.press(screen.getByText('Log Out'));
-    fireEvent.press(screen.getByText('Change Avatar'));
-
-    expect(onLogout).toHaveBeenCalledTimes(1);
-    expect(onAskPickAvatar).toHaveBeenCalledTimes(1);
+// ---- Animated.timing 同步化，避免 act 警告 ----
+let timingSpy;
+beforeAll(() => {
+  timingSpy = jest.spyOn(Animated, 'timing').mockImplementation((value, config) => {
+    return {
+      start: (cb) => {
+        try {
+          value.setValue(config?.toValue ?? 0);
+        } finally {
+          if (typeof cb === 'function') cb({ finished: true });
+        }
+      },
+    };
   });
 });
-
-/* ---- 纯 RN 组件的小 sanity 测试 ---- */
-it('Text renders', () => {
-  render(<Text>Hello Jest!</Text>);
-  expect(screen.getByText('Hello Jest!')).toBeTruthy();
+afterAll(() => {
+  timingSpy?.mockRestore();
 });
 
-it('Button works', () => {
-  const onPress = jest.fn();
-  render(<Button title="Test Button" onPress={onPress} />);
-  fireEvent.press(screen.getByText('Test Button'));
-  expect(onPress).toHaveBeenCalledTimes(1);
+// ---- 被测组件 ----
+import ProfileScreen from '../../screens/ProfileScreen';
+
+function setup(props = {}) {
+  const defaultProps = {
+    loading: false,
+    // achievements
+    featuredAchievements: [
+      { id: 'first', title: 'First Quiz', progress: 25, icon: { lib: 'mci', name: 'medal-outline' } },
+      { id: 'ks5', title: 'Knowledge Seeker', progress: 60, icon: { lib: 'mci', name: 'trophy-outline' } },
+      { id: 'ks10', title: 'Quiz Explorer', progress: 100, icon: { lib: 'ion', name: 'trophy-outline' } },
+    ],
+    achLoading: false,
+    onOpenAchievementGallery: jest.fn(),
+    // settings
+    notificationsEnabled: true,
+    soundEnabled: true,
+    vibrationEnabled: true,
+    mockDisasterActive: false,
+    onToggleNotifications: jest.fn(),
+    onToggleSound: jest.fn(),
+    onToggleVibration: jest.fn(),
+    onToggleMockDisaster: jest.fn(),
+  };
+  const all = { ...defaultProps, ...props };
+  const utils = render(<ProfileScreen {...all} />);
+  return { ...utils, props: all };
+}
+
+// 只取“真正可点击的开关”（最外层 Pressable，有 onPress），并按 onPress 引用去重
+function getUniqueClickableSwitches(queries) {
+  const all = queries.UNSAFE_getAllByProps({ accessibilityRole: 'switch' }) || [];
+  const clickable = all.filter((n) => typeof n?.props?.onPress === 'function');
+  const map = new Map(); // key: onPress function ref
+  clickable.forEach((n) => {
+    const key = n.props.onPress;
+    if (!map.has(key)) map.set(key, n);
+  });
+  return Array.from(map.values());
+}
+
+describe('ProfileScreen (presentational)', () => {
+  it('shows loading state', () => {
+    render(<ProfileScreen loading={true} featuredAchievements={[]} />);
+    expect(screen.toJSON()).toBeTruthy();
+  });
+
+  it('renders achievements and titles', () => {
+    setup();
+    expect(screen.getByText('Achievements')).toBeTruthy();
+    expect(screen.getByText('First Quiz')).toBeTruthy();
+    expect(screen.getByText('Knowledge Seeker')).toBeTruthy();
+    expect(screen.getByText('Quiz Explorer')).toBeTruthy();
+    expect(screen.getByText('View All')).toBeTruthy();
+  });
+
+  it('invokes onOpenAchievementGallery when pressing "View All"', () => {
+    const { props } = setup();
+    fireEvent.press(screen.getByText('View All'));
+    expect(props.onOpenAchievementGallery).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders four settings switches with initial state', () => {
+    const utils = setup({
+      notificationsEnabled: true,
+      soundEnabled: true,
+      vibrationEnabled: true,
+      mockDisasterActive: false,
+    });
+    const switches = getUniqueClickableSwitches(utils);
+    const first4 = switches.slice(0, 4);
+    expect(first4.length).toBe(4);
+
+    expect(first4[0].props.accessibilityState.checked).toBe(true);  // Notifications
+    expect(first4[1].props.accessibilityState.checked).toBe(true);  // Sound Effects
+    expect(first4[2].props.accessibilityState.checked).toBe(true);  // Vibration
+    expect(first4[3].props.accessibilityState.checked).toBe(false); // Mock Disaster
+  });
+
+  it('toggles each setting and calls corresponding handlers', () => {
+    const utils = setup({
+      notificationsEnabled: false,
+      soundEnabled: false,
+      vibrationEnabled: false,
+      mockDisasterActive: false,
+    });
+    const { props } = utils;
+
+    const [notif, sound, vibra, mock] = getUniqueClickableSwitches(utils).slice(0, 4);
+
+    fireEvent.press(notif);
+    fireEvent.press(sound);
+    fireEvent.press(vibra);
+    fireEvent.press(mock);
+
+    expect(props.onToggleNotifications).toHaveBeenCalledWith(true);
+    expect(props.onToggleSound).toHaveBeenCalledWith(true);
+    expect(props.onToggleVibration).toHaveBeenCalledWith(true);
+    expect(props.onToggleMockDisaster).toHaveBeenCalledWith(true);
+  });
 });
+
