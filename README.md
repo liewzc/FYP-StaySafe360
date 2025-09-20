@@ -1,7 +1,3 @@
-好的 👍 我帮你写一个 StaySafe360 的 README.md，参考你给的 LiveShield 模板，但内容换成你项目的特性。
-
-⸻
-
 StaySafe360
 
 StaySafe360 is a cross-platform mobile application built with React Native + Expo that empowers individuals in Singapore to prepare for and respond to disasters and medical emergencies.
