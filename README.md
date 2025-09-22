@@ -84,26 +84,43 @@ This project was built and tested using **Expo SDK 52**.
 Please ensure your **Expo Go** app is updated to SDK 52:  
 👉 [Expo Go v52](https://expo.dev/go?sdkVersion=52&platform=android)
 
+````markdown
 ### Steps
 
-1. **Install Dependencies**
+1. **Create `.env` File**
+   Create a file named **`.env`** in the project root and add:
+
+   ```env
+   EXPO_PUBLIC_OPENROUTER_API_KEY=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
+   EXPO_PUBLIC_OPENROUTER_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
+````
+
+> ⚠️ Notes: Keys prefixed with `EXPO_PUBLIC_` are automatically exposed in Expo.
+> Do not commit real secrets to version control. For production, use **EAS Secrets**.
+
+2. **Install Dependencies**
+
    ```bash
    npm install
+   ```
 
-	2.	Start the Development Server
+3. **Start the Development Server**
 
-npm start
+   ```bash
+   npm start
+   ```
 
-This launches the Expo Developer Tools. You can run the app on:
-	•	Android Emulator
-	•	iOS Simulator
-	•	Physical device: scan QR code with Expo Go (SDK 52)
+   This launches the Expo Developer Tools. You can run the app on:
 
-	3.	Run Tests
+   * Android Emulator
+   * iOS Simulator
+   * Physical device: scan QR code with Expo Go (SDK 52)
 
-npm test
+4. **Run Tests**
 
-
+   ```bash
+   npm test
+   ```
 
 ⸻
 
