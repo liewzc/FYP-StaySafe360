@@ -1,3 +1,4 @@
+```markdown
 # StaySafe360
 
 StaySafe360 is a cross-platform mobile application built with **React Native + Expo** that empowers individuals in Singapore to prepare for and respond to disasters and medical emergencies.
@@ -26,7 +27,7 @@ It combines localized hazard guides, first aid training, gamified quizzes, achie
 - **CPR Training**: built-in metronome + instructional videos  
 
 ### Emergency Tools
-- SOS quick-dial: **999 (Police), 995 (Ambulance), 1777 (Civil Defence)**  
+- SOS quick-dial: **999 (Police), 995 (Ambulance), 1777 (Non-emergency ambulance)**  
 - Loud emergency siren with vibration feedback  
 - Interactive disaster preparedness checklist  
 - Weather Map: rainfall, PM2.5, humidity, wind layers  
@@ -65,6 +66,8 @@ It combines localized hazard guides, first aid training, gamified quizzes, achie
 
 ## 📂 Project Structure (simplified)
 
+```
+
 /screens
 /quiz
 /knowledge
@@ -75,66 +78,78 @@ It combines localized hazard guides, first aid training, gamified quizzes, achie
 /assets
 App.js
 
+````
+
 ---
 
 ## 🚀 Run Locally
 
-⚠️ **SDK Version Notice**  
-This project was built and tested using **Expo SDK 52**.  
-Please ensure your **Expo Go** app is updated to SDK 52:  
-👉 [Expo Go v52](https://expo.dev/go?sdkVersion=52&platform=android)
+**SDK Version Notice**  
+This project was built and tested with **Expo SDK 52**.  
+Please ensure your **Expo Go** app supports SDK 52:  
+[Expo Go v52](https://expo.dev/go?sdkVersion=52&platform=android)
 
-````markdown
 ### Steps
 
-1. **Create `.env` File**
-   Create a file named **`.env`** in the project root and add:
+#### 1. Create `.env` File
+Create a file named **`.env`** in the project root and add:
 
-   ```env
-   EXPO_PUBLIC_OPENROUTER_API_KEY=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
-   EXPO_PUBLIC_OPENROUTER_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
+```env
+# Replace with your own key; do NOT commit real secrets
+EXPO_PUBLIC_OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY
+EXPO_PUBLIC_OPENROUTER_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
 ````
 
-> ⚠️ Notes: Keys prefixed with `EXPO_PUBLIC_` are automatically exposed in Expo.
-> Do not commit real secrets to version control. For production, use **EAS Secrets**.
+> **Notes**
+>
+> * Keys prefixed with `EXPO_PUBLIC_` are automatically exposed in Expo.
+> * Do **not** commit real secrets to version control. For production, consider **EAS Secrets**.
+> * Restart the dev server after adding or changing `.env`.
 
-2. **Install Dependencies**
+#### 2. Install Dependencies
 
-   ```bash
-   npm install
-   ```
-
-3. **Start the Development Server**
-
-   ```bash
-   npm start
-   ```
-
-   This launches the Expo Developer Tools. You can run the app on:
-
-   * Android Emulator
-   * iOS Simulator
-   * Physical device: scan QR code with Expo Go (SDK 52)
-
-4. **Run Tests**
-
-   ```bash
-   npm test
-   ```
-
+```bash
+npm install
 ```
 
-⸻
+#### 3. Start the Development Server
 
-🧪 Testing Notes
-	•	Uses Jest + React Native Testing Library
-	•	Includes unit, component, and integration tests
-	•	Run npm test to execute all test suites
+```bash
+npm start
+```
 
-⸻
+This launches the **Expo Developer Tools**. You can run the app on:
 
-📚 Credits / Acknowledgments
-	•	NEA & PUB – for official Singapore environmental APIs
-	•	Supabase – for optional authentication support (early prototype)
-	•	Expo – for cross-platform development, notifications, AV, haptics
-	•	Open-source resources – for first aid and disaster education references
+* Android Emulator
+* iOS Simulator
+* Physical device: scan the QR code with **Expo Go (SDK 52)**
+
+#### 4. Run Tests
+
+```bash
+npm test
+```
+
+---
+
+## 🧪 Testing Notes
+
+* Jest + React Native Testing Library
+* Includes unit, component, and integration tests
+* Run `npm test` to execute all test suites
+
+---
+
+## 🔑 Environment Variables (Reference)
+
+If you need to use additional variables later, keep them in `.env` with the `EXPO_PUBLIC_` prefix if they must be accessible on the client.
+For sensitive server-only values, avoid exposing them in the client bundle and consider a backend proxy or EAS Secrets.
+
+---
+
+## 📚 Credits / Acknowledgments
+
+* **NEA & PUB** – official Singapore environmental APIs
+* **Supabase** – optional authentication support (early prototype)
+* **Expo** – cross-platform development, notifications, AV, haptics
+* **Open-source resources** – first aid & disaster education references
