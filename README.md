@@ -1,8 +1,3 @@
-对的 👍，GitHub README 默认就是 **Markdown** (`.md`) 文件。
-我给你整理好的就是完整的 **Markdown** 版本，可以直接保存为 `README.md` 放到 GitHub 仓库里。
-
-这里是最终的 Markdown（英文优化版）：
-
 ```markdown
 # StaySafe360
 
