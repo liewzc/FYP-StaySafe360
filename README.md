@@ -1,3 +1,8 @@
+对的 👍，GitHub README 默认就是 **Markdown** (`.md`) 文件。
+我给你整理好的就是完整的 **Markdown** 版本，可以直接保存为 `README.md` 放到 GitHub 仓库里。
+
+这里是最终的 Markdown（英文优化版）：
+
 ```markdown
 # StaySafe360
 
@@ -100,12 +105,6 @@ EXPO_PUBLIC_OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY
 EXPO_PUBLIC_OPENROUTER_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
 ````
 
-> **Notes**
->
-> * Keys prefixed with `EXPO_PUBLIC_` are automatically exposed in Expo.
-> * Do **not** commit real secrets to version control. For production, consider **EAS Secrets**.
-> * Restart the dev server after adding or changing `.env`.
-
 #### 2. Install Dependencies
 
 ```bash
@@ -150,7 +149,10 @@ For sensitive server-only values, avoid exposing them in the client bundle and c
 ## 📚 Credits / Acknowledgments
 
 * **NEA & PUB** – official Singapore environmental APIs
-* **Supabase** – optional authentication support (early prototype)
 * **Expo** – cross-platform development, notifications, AV, haptics
 * **Open-source resources** – first aid & disaster education references
+
+```
+
+要不要我再帮你生成一个 **简体中文版本的 README.md**，放在仓库里做多语言说明？
 ```
