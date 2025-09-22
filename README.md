@@ -100,6 +100,12 @@ EXPO_PUBLIC_OPENROUTER_API_KEY=YOUR_OPENROUTER_KEY
 EXPO_PUBLIC_OPENROUTER_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
 ````
 
+> **Notes**
+>
+> * Keys prefixed with `EXPO_PUBLIC_` are automatically exposed in Expo.
+> * Do **not** commit real secrets to version control. For production, consider **EAS Secrets**.
+> * Restart the dev server after adding or changing `.env`.
+
 #### 2. Install Dependencies
 
 ```bash
@@ -149,5 +155,3 @@ For sensitive server-only values, avoid exposing them in the client bundle and c
 
 ```
 
-要不要我再帮你生成一个 **简体中文版本的 README.md**，放在仓库里做多语言说明？
-```
