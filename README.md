@@ -85,6 +85,7 @@ Please ensure your **Expo Go** app is updated to SDK 52:
 👉 [Expo Go v52](https://expo.dev/go?sdkVersion=52&platform=android)
 
 ````markdown
+
 ### Steps
 
 1. **Create `.env` File**
