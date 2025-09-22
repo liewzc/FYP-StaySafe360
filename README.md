@@ -153,3 +153,4 @@ For sensitive server-only values, avoid exposing them in the client bundle and c
 * **Supabase** – optional authentication support (early prototype)
 * **Expo** – cross-platform development, notifications, AV, haptics
 * **Open-source resources** – first aid & disaster education references
+```
